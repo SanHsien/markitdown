@@ -44,6 +44,9 @@ def test_required_overlay_files_exist() -> None:
         "docs/UPSTREAM.md",
         "tools/dev_check.ps1",
         "tools/bootstrap_dev.ps1",
+        "tools/test_product.ps1",
+        "requirements.txt",
+        "requirements-all.txt",
         "LICENSE",
     )
     missing = [name for name in required if not (ROOT / name).is_file()]

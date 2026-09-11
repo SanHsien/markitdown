@@ -33,17 +33,20 @@ pwsh -NoProfile -File tools\dev_check.ps1
 pwsh -NoProfile -File tools\bootstrap_dev.ps1
 ```
 
-這套 gate **不安裝** heavy dependencies（如 `azure-ai-documentintelligence`、`SpeechRecognition` 等）。它證明維護文件、工具與契約測試能穩定執行。
-
-### 開發與測試產品程式（選配）
-
-若需要對 `markitdown` 核心功能進行修改或測試：
+若需一併安裝全套產品轉譯依賴（Office、PDF、音訊、雲端服務等）：
 
 ```powershell
-# 建議另開獨立環境或以 editable 方式安裝
-pip install -e "./packages/markitdown[all]"
-pip install pytest
-pytest packages/markitdown/tests
+pwsh -NoProfile -File tools\bootstrap_dev.ps1 -All
+```
+
+### 執行產品測試
+
+本 repo 提供專用 Windows 原生產品測試腳本 `tools/test_product.ps1`，會自動載入本機原始碼目錄 `packages/markitdown/src`，避開全域 site-packages 舊版套件的污染：
+
+```powershell
+# 執行指定模組測試或全套測試
+pwsh -NoProfile -File tools\test_product.ps1
+pwsh -NoProfile -File tools\test_product.ps1 packages/markitdown/tests/test_file_paths.py
 ```
 
 ## Canonical Gate

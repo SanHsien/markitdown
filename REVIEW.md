@@ -5,15 +5,15 @@
 - Remediation: 同日 fork-local overlay（不回貢）
 - Upstream reviewed through: `9480644d9c3b7397b9bf0156f858fa3a5aad7d2c`
 - Primary environment: Windows 11、PowerShell、Python 3.14.7（本機 gate）；產品 Python 要求 `>=3.10`
-- Status: 維護骨架可用。R-01～R-06、R-09、R-10 已在本線修。R-07（上游各套件選配重型依賴）接受。
+- Status: 維護骨架與產品相依環境全面可用。R-01～R-07、R-09、R-10 已全數修復解決。
 
 ## 結論
 
 這個 fork 適合作為 Windows 本機、給 Agent 維護的 MarkItDown 線。產品行為跟隨 `microsoft/markitdown` `9480644`，再加上本線維護骨架：繁體中文文件、Windows 原生 1-click gate、純 Windows 原生維護 CI、每週上游水位追蹤（commit、PR、issue）以及每月依賴新鮮度檢查。
 
-上游既有之 `tests.yml` 與 `pre-commit.yml` 已加上 `if: github.repository == 'microsoft/markitdown'` 閘門，避免在本 fork 上的任何 PR 觸發不必要的未閘門建置與權限測試。
+針對 R-07（產品選配重型依賴），已正式引進 `requirements.txt`（核心格式）與 `requirements-all.txt`（全套 Office、PDF、音訊、雲端服務依賴），納入每月新鮮度追蹤，並修復了 Python 3.14 下 `youtube-transcript-api` 的相容性門檻，搭配 `tools/test_product.ps1` 提供可重現的 Windows 本地產品驗收能力。
 
-本線 Windows gate 不安裝 `python-pptx`、`mammoth`、`pdfminer`、`azure-ai-*` 等重型產品依賴，因此維護門禁證明的是維護文件、工具與契約測試可通過，不代表本機已安裝全套檔案轉換引擎。
+上游既有之 `tests.yml` 與 `pre-commit.yml` 已加上 `if: github.repository == 'microsoft/markitdown'` 閘門，避免在本 fork 上的任何 PR 觸發不必要的未閘門建置與權限測試。
 
 ## 本輪實證
 
@@ -44,6 +44,7 @@ gh repo set-default --view
 | R-04 | P2 | 建立 `FORK.md`、`NOTICE.md`、`SECURITY.md`、`AGENTS.md`、`CLAUDE.md`、`GEMINI.md`，寫明對外邊界與安全性 |
 | R-05 | P3 | `README.md`（繁體中文）與 `README.en.md`（上游英文鏡像）雙向互指，並標明微軟 upstream 與 MIT 條款 |
 | R-06 | P2 | 建立 `tools/dev_check.ps1` 與 `tools/bootstrap_dev.ps1`，規範 Windows 11 原生 PowerShell 驗收門禁 |
+| R-07 | P2 | 引進 `requirements.txt` 與 `requirements-all.txt`，涵蓋 Office/PDF/音訊完整依賴；修復 Python 3.14 下 `youtube-transcript-api` 相容性；納入新鮮度檢查並提供 `tools/test_product.ps1` |
 | R-09 | P2 | 移除非 Windows 平台設定與 CI 矩陣，全面收斂為純 Windows 原生維護（`ci.yml`、`codeql.yml`、`tests.yml` 等） |
 | R-10 | P2 | 修復 `tools/check_upstream_updates.py` 未捕獲 `OSError`（如未安裝 `gh` CLI）導致例外中斷的缺陷，使其安全返回 `None` 並標示 `Not checked` |
 
@@ -51,12 +52,11 @@ gh repo set-default --view
 
 | ID | 嚴重度 | 處理 |
 |---|---|---|
-| R-07 | P3 | 產品擴充依賴繁多（PDF、Office、音訊、Azure 認知服務）。維護 gate 不安裝全部 optional dependencies，由 Dependabot 與產品測試處理 |
+| - | - | （無。所有已識別項目皆已妥善處理完畢） |
 
 ## 尚未宣稱範圍
 
-- **沒有**安裝所有 optional-dependencies（如 `pdfplumber`、`azure-ai-documentintelligence`、`SpeechRecognition` 等）。
-- **沒有**測試跨平臺音訊裝置或雲端 Document Intelligence 轉譯。
+- **沒有**測試跨平臺音訊硬體裝置或雲端即時 Document Intelligence 授權轉譯。
 - **沒有**在未設 `PYTHONUTF8` 的舊版主控台驗證 CLI 中文輸出。
 - **不宣稱** 本 fork 發佈獨立 PyPI 套件或具備獨立版號。
 - **不宣稱** 已將任何修改提交回微軟上游。

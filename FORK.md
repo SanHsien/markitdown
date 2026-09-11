@@ -22,7 +22,9 @@
 | `AGENTS.md` / `CLAUDE.md` / `GEMINI.md` | 本 fork 的 AI 維護單一真相源 |
 | `NOTICE.md` / `FORK.md` | 來源、授權與同步說明 |
 | `tools/dev_check.ps1` | Windows 本機一鍵 gate（維護工具，不安裝重型產品依賴） |
-| `tools/bootstrap_dev.ps1` | Windows 本機一鍵初始化與驗收 |
+| `tools/bootstrap_dev.ps1` | Windows 本機一鍵初始化與驗收（支援 `-All` 參數安裝全套產品依賴） |
+| `tools/test_product.ps1` | Windows 原生產品測試執行腳本（自動載入本機 source 避免 site-packages 污染） |
+| `requirements.txt` / `requirements-all.txt` | MarkItDown 核心與全套格式（Office、PDF、音訊、雲端）產品依賴清單 |
 | `.github/workflows/ci.yml` | 純 Windows 原生 CI (windows-latest Python 3.10–3.14 矩陣)：compile / ruff / 維護測試 / 連結檢查 |
 | `.github/workflows/upstream-check.yml` | 每週對 `upstream/main` 做未審查 commit、PR、issue 水位檢查 |
 | `.github/workflows/dependency-freshness.yml` | 每月依賴新鮮度檢查 |

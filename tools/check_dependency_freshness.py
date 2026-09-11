@@ -25,7 +25,11 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 USER_AGENT = "markitdown-dependency-freshness"
 
-REQUIREMENT_FILES = ("requirements-dev.txt",)
+REQUIREMENT_FILES = (
+    "requirements-dev.txt",
+    "requirements.txt",
+    "requirements-all.txt",
+)
 
 _REQUIREMENT_RE = re.compile(r"^([A-Za-z0-9_.-]+)(?:\[[^\]]+\])?\s*(.*)$")
 _MINIMUM_RE = re.compile(r"(>=|>|==|~=)\s*([0-9][0-9A-Za-z.!+_-]*)")

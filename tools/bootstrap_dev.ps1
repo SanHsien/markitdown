@@ -1,5 +1,7 @@
 [CmdletBinding()]
-param()
+param(
+    [switch]$All
+)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
@@ -27,6 +29,14 @@ if ($LASTEXITCODE -ne 0) {
 & $venvPython -m pip install -r (Join-Path $repoRoot "requirements-dev.txt")
 if ($LASTEXITCODE -ne 0) {
     throw "pip install requirements-dev.txt failed with exit code $LASTEXITCODE"
+}
+
+if ($All) {
+    Write-Host "==> Install full product dependencies (requirements-all.txt)"
+    & $venvPython -m pip install -r (Join-Path $repoRoot "requirements-all.txt")
+    if ($LASTEXITCODE -ne 0) {
+        throw "pip install requirements-all.txt failed with exit code $LASTEXITCODE"
+    }
 }
 
 Write-Host "==> Canonical Windows gate"
