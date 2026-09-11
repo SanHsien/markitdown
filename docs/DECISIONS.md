@@ -36,3 +36,22 @@
 **決定**：日常維護修改在本機跑 `tools\dev_check.ps1` 後直接推 `origin/main`。Dependabot 與外部貢獻仍走 PR，合併前讀 diff。
 
 **理由**：對齊 SanHsien 體系其他維護 fork 的治理規範。
+
+## 2026-09-11：上游分支、PR 與 Issue 首次盤點結論（不提前引用未合併產品 PR，聚焦 Windows 維護）
+
+**決定**：
+1. **上游分支**：全部不引用。`upstream/v0.0.X`（歷史舊線）、`upstream/onenote`（停滯草稿）、`upstream/zip_formats` 與各貢獻者功能分支均不具備即時投產價值。本 fork 唯一長期跟隨分支為 `upstream/main`。
+2. **上游 Open PRs（317 筆）**：全部暫不提前引入（no cherry-pick）。等待微軟官方審查通過合併進 `main` 隨 commit 抵達再同步；以避免覆蓋 fork 維護結構與產生不成熟的 API 衝突。
+3. **上游 Open Issues（317 筆）**：完成分類盤點。Windows 部署問題已由本 fork 的 Windows gate 與繁中文件解決；表格 pipe 與 docx numbering 等產品缺陷維持上游追蹤。
+4. **水位鎖定**：`tools/upstream_baseline.json` 鎖定 PR `#2457` 與 Issue `#2457`。
+
+**理由**：
+- 逐筆 cherry-pick 未經微軟審查定案的 PR，容易在未來上游改版時引發重複衝突與相容性破壞。
+- 盤點後的非 main 分支均為舊版或停滯草稿。
+- 水位鎖定在 `#2457`，確保增量檢查不會再次處理歷史 317 筆舊項目，達成「一次評估，之後只看增量」。
+
+## 2026-09-11：授權原則：所有 Session 預設全自動推進（Full Auto）
+
+**決定**：維護者明確指示所有 session 預設由代理人自主判斷、全自動推進，無須中途重複確認授權。
+
+**理由**：提升自動化協作效率。代理人在遵守硬閘門（不超出專案目錄、不暴露金鑰、不上傳上游）的前提下，自主判斷、直接推進實作與驗收。
