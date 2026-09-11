@@ -29,6 +29,7 @@ MAINTAINED_DOCUMENTS = (
     "NOTICE.md",
     "AGENTS.md",
     "CLAUDE.md",
+    "GEMINI.md",
     "CONTRIBUTING.md",
     "SECURITY.md",
     "REVIEW.md",
