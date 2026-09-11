@@ -166,3 +166,8 @@ cython_debug/
 src/.DS_Store
 .DS_Store
 .cursorrules
+
+# Fork maintenance
+.ruff_cache/
+upstream-review-report.md
+dependency-freshness-report.md

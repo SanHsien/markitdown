@@ -1,0 +1,9 @@
+{
+  "repo": "https://github.com/microsoft/markitdown.git",
+  "branch": "main",
+  "reviewed_through": "9480644d9c3b7397b9bf0156f858fa3a5aad7d2c",
+  "reviewed_date": "2026-09-11",
+  "notes": "Fork created from upstream main 9480644 (Added file paths tests. #2454). No unmerged upstream PRs adopted. 2026-09-11：PR 水位 2457、issue 水位 2457。理由與記錄見 docs/DECISIONS.md 同日條目。",
+  "reviewed_pr_through": 2457,
+  "reviewed_issue_through": 2457
+}
