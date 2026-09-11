@@ -6,7 +6,7 @@
 </p>
 
 > [!NOTE]
-> This is an upstream English mirror kept inside the [SanHsien/markitdown](https://github.com/SanHsien/markitdown) maintenance fork of [microsoft/markitdown](https://github.com/microsoft/markitdown). See [README.md](README.md) for the Traditional Chinese primary documentation and [FORK.md](FORK.md) for fork details.
+> This is an upstream English mirror kept inside the [SanHsien/markitdown](https://github.com/SanHsien/markitdown) Windows-only maintenance fork of [microsoft/markitdown](https://github.com/microsoft/markitdown). All non-Windows platform configurations have been removed. See [README.md](README.md) for the Traditional Chinese primary documentation and [FORK.md](FORK.md) for fork details.
 
 [![PyPI](https://img.shields.io/pypi/v/markitdown.svg)](https://pypi.org/project/markitdown/)
 ![PyPI - Downloads](https://img.shields.io/pypi/dd/markitdown)

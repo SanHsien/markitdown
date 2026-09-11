@@ -23,7 +23,7 @@
 | `NOTICE.md` / `FORK.md` | 來源、授權與同步說明 |
 | `tools/dev_check.ps1` | Windows 本機一鍵 gate（維護工具，不安裝重型產品依賴） |
 | `tools/bootstrap_dev.ps1` | Windows 本機一鍵初始化與驗收 |
-| `.github/workflows/ci.yml` | Ubuntu 3.10–3.14 + Windows Python 3.14：compile / ruff / 維護測試 / 連結檢查 |
+| `.github/workflows/ci.yml` | 純 Windows 原生 CI (windows-latest Python 3.10–3.14 矩陣)：compile / ruff / 維護測試 / 連結檢查 |
 | `.github/workflows/upstream-check.yml` | 每週對 `upstream/main` 做未審查 commit、PR、issue 水位檢查 |
 | `.github/workflows/dependency-freshness.yml` | 每月依賴新鮮度檢查 |
 | 產品 CI workflow 閘門 | 上游 `tests.yml`、`pre-commit.yml` 加上 `if: github.repository == 'microsoft/markitdown'` 防護 |

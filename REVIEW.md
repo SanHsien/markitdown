@@ -9,7 +9,7 @@
 
 ## 結論
 
-這個 fork 適合作為 Windows 本機、給 Agent 維護的 MarkItDown 線。產品行為跟隨 `microsoft/markitdown` `9480644`，再加上本線維護骨架：繁體中文文件、Windows 原生 1-click gate、Ubuntu + Windows 雙平台維護 CI、每週上游水位追蹤（commit、PR、issue）以及每月依賴新鮮度檢查。
+這個 fork 適合作為 Windows 本機、給 Agent 維護的 MarkItDown 線。產品行為跟隨 `microsoft/markitdown` `9480644`，再加上本線維護骨架：繁體中文文件、Windows 原生 1-click gate、純 Windows 原生維護 CI、每週上游水位追蹤（commit、PR、issue）以及每月依賴新鮮度檢查。
 
 上游既有之 `tests.yml` 與 `pre-commit.yml` 已加上 `if: github.repository == 'microsoft/markitdown'` 閘門，避免在本 fork 上的任何 PR 觸發不必要的未閘門建置與權限測試。
 

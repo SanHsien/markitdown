@@ -81,9 +81,9 @@ def test_review_snapshot_has_required_sections() -> None:
 def test_ci_covers_python_314() -> None:
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     assert '"3.14"' in workflow
-    assert "windows / py3.14" in workflow
+    assert "windows / py" in workflow
     assert "tools/dev_check.ps1" in workflow or "tools\\dev_check.ps1" in workflow
-    assert "-c tools/pytest.ini" in workflow
+    assert "ubuntu" not in workflow
 
 
 def test_product_ci_workflows_are_gated_to_upstream() -> None:

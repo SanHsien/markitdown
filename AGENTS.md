@@ -10,7 +10,7 @@
 `origin` 是 `SanHsien/markitdown`（預設分支 `main`），`upstream` 是微軟原作者 repo（預設分支 `main`）。
 保留上游作者、MIT License 與產品程式。本 fork 的維護差異記在 [`FORK.md`](FORK.md) 與 [`docs/DECISIONS.md`](docs/DECISIONS.md)。
 
-主要開發與完整驗收環境是 **Windows 11 + PowerShell**。上游 Ubuntu/Windows 矩陣驗產品測試；本線 `ci.yml` 驗維護骨架。
+主要開發與完整驗收環境是 **Windows 11 + PowerShell**。本 fork 為純 Windows 維護線（已移除所有非 Windows CI 與平台設定），所有測試與工作流程均在 Windows 原生環境執行。
 
 ## 硬性邊界
 

@@ -20,8 +20,11 @@ concurrency:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
     env:
       PYTHONUTF8: "1"
       PYTHONIOENCODING: "utf-8"

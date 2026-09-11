@@ -55,7 +55,7 @@ pytest packages/markitdown/tests
 3. `pytest tools/tests`（使用獨立的 `tools/pytest.ini`）
 4. `python tools/check_links.py`（驗證所有維護文件相對連結）
 
-CI 在 Ubuntu 跑 3.10–3.14 矩陣，並搭配 Windows Python 3.14 job 執行同一套 gate。推至 `main` 前請務必在本機跑過 gate。
+CI 專注於 Windows 原生環境，在 `windows-latest` 執行完整 Python 3.10–3.14 矩陣並跑過 gate。推至 `main` 前請務必在本機跑過 gate。
 
 ## 依賴新鮮度
 
