@@ -10,7 +10,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import check_dependency_freshness as checker  # noqa: E402
+import check_dependency_freshness as checker
 
 
 def test_comparison_uses_the_precision_the_declaration_states() -> None:

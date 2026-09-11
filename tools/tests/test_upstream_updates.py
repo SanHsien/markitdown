@@ -16,7 +16,7 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "tools"))
 
-import check_upstream_updates as checker  # noqa: E402, I001
+import check_upstream_updates as checker  # noqa: I001
 
 
 BASELINE = {
@@ -78,6 +78,15 @@ def test_ticket_titles_survive_undecodable_bytes(monkeypatch):
 def test_gh_failure_reports_unchecked_rather_than_empty(monkeypatch):
     """`None`, not `[]`: "not checked" must never render as "nothing to review"."""
     monkeypatch.setattr(checker.subprocess, "run", fake_gh([], returncode=1))
+    assert checker.collect_new_tickets(BASELINE, "issue") is None
+
+
+def test_gh_missing_executable_reports_none(monkeypatch):
+    """When `gh` executable is not installed or raises OSError, return None instead of crashing."""
+    def missing_runner(*args, **kwargs):
+        raise FileNotFoundError("No such file or directory: 'gh'")
+
+    monkeypatch.setattr(checker.subprocess, "run", missing_runner)
     assert checker.collect_new_tickets(BASELINE, "issue") is None
 
 

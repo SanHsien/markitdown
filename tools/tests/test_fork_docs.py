@@ -7,8 +7,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import check_links  # noqa: E402
-import check_upstream_updates as checker  # noqa: E402
+import check_links
+import check_upstream_updates as checker
 
 ROOT = Path(__file__).resolve().parents[2]
 PRODUCT_CI_WORKFLOWS = (

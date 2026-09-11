@@ -120,7 +120,7 @@ def fetch_pypi_version(package_name: str, timeout: float = 10.0) -> str | None:
         headers={"Accept": "application/json", "User-Agent": USER_AGENT},
     )
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310
+        with urllib.request.urlopen(request, timeout=timeout) as response:
             payload = json.loads(response.read().decode("utf-8"))
     except (OSError, ValueError):
         return None

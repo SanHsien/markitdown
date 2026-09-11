@@ -1,11 +1,11 @@
-# Repository review（Windows-first）
+# Repository review（Windows-only）
 
 - Review date: 2026-09-11
 - Review baseline: `9480644d9c3b7397b9bf0156f858fa3a5aad7d2c`
 - Remediation: 同日 fork-local overlay（不回貢）
 - Upstream reviewed through: `9480644d9c3b7397b9bf0156f858fa3a5aad7d2c`
 - Primary environment: Windows 11、PowerShell、Python 3.14.7（本機 gate）；產品 Python 要求 `>=3.10`
-- Status: 維護骨架可用。R-01～R-06 已在本線修。R-07（上游各套件選配重型依賴）接受。
+- Status: 維護骨架可用。R-01～R-06、R-09、R-10 已在本線修。R-07（上游各套件選配重型依賴）接受。
 
 ## 結論
 
@@ -41,16 +41,17 @@ gh repo set-default --view
 | R-01 | P2 | `.gitignore` 加入 `.env`、`.venv`、`upstream-review-report.md`、`dependency-freshness-report.md`、`.ruff_cache/` |
 | R-02 | P2 | 上游 `tests.yml`、`pre-commit.yml` 加上 `if: github.repository == 'microsoft/markitdown'` 防護閘門 |
 | R-03 | P2 | 建立獨立維護測試目錄 `tools/tests/` 與獨立 `tools/pytest.ini`，避免產品環境污染 |
-| R-04 | P2 | 建立 `FORK.md`、`NOTICE.md`、`SECURITY.md`、`AGENTS.md`、`CLAUDE.md`，寫明對外邊界與安全性 |
+| R-04 | P2 | 建立 `FORK.md`、`NOTICE.md`、`SECURITY.md`、`AGENTS.md`、`CLAUDE.md`、`GEMINI.md`，寫明對外邊界與安全性 |
 | R-05 | P3 | `README.md`（繁體中文）與 `README.en.md`（上游英文鏡像）雙向互指，並標明微軟 upstream 與 MIT 條款 |
 | R-06 | P2 | 建立 `tools/dev_check.ps1` 與 `tools/bootstrap_dev.ps1`，規範 Windows 11 原生 PowerShell 驗收門禁 |
+| R-09 | P2 | 移除非 Windows 平台設定與 CI 矩陣，全面收斂為純 Windows 原生維護（`ci.yml`、`codeql.yml`、`tests.yml` 等） |
+| R-10 | P2 | 修復 `tools/check_upstream_updates.py` 未捕獲 `OSError`（如未安裝 `gh` CLI）導致例外中斷的缺陷，使其安全返回 `None` 並標示 `Not checked` |
 
 ## 接受、不改契約
 
 | ID | 嚴重度 | 處理 |
 |---|---|---|
 | R-07 | P3 | 產品擴充依賴繁多（PDF、Office、音訊、Azure 認知服務）。維護 gate 不安裝全部 optional dependencies，由 Dependabot 與產品測試處理 |
-| R-08 | P3 | 上游 Dockerfile 與 DevContainer 保持原樣，不強制改造為 Windows 專屬容器 |
 
 ## 尚未宣稱範圍
 
