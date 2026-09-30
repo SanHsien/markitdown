@@ -99,7 +99,7 @@ def test_baseline_file_is_valid_and_complete() -> None:
     assert baseline["repo"] == "https://github.com/microsoft/markitdown.git"
     assert baseline["branch"] == "main"
     assert len(baseline["reviewed_through"]) == 40
-    assert baseline["reviewed_through"] == "9480644d9c3b7397b9bf0156f858fa3a5aad7d2c"
+    assert baseline["reviewed_through"] == "b8f79c57ebc0044be41323d89b2a45d3fda8460e"
     assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", baseline["reviewed_date"])
     assert isinstance(baseline["reviewed_pr_through"], int)
     assert isinstance(baseline["reviewed_issue_through"], int)
@@ -141,5 +141,5 @@ def test_baseline_matches_decisions_record() -> None:
     upstream = (ROOT / "docs" / "UPSTREAM.md").read_text(encoding="utf-8")
     baseline = json.loads((ROOT / "tools" / "upstream_baseline.json").read_text(encoding="utf-8"))
     assert baseline["reviewed_date"] in decisions
-    assert "9480644" in upstream
+    assert "b8f79c5" in upstream
     assert "microsoft/markitdown" in decisions

@@ -58,3 +58,25 @@
 - 本 fork 已完成 Windows 11 原生工程骨架、繁中雙語文檔、全格式選配依賴引進，以及相容性修復，具備獨立里程碑價值。
 - 上游若有新版本發佈，由維護者在每週/每月上游同步審查時依 diff 自行評估整合，並在代碼合併時保留自主版本號。
 
+
+## 2026-09-30：第二輪上游審查（commit 至 b8f79c5、PR 至 #2566、issue 至 #2567）
+
+本 fork 歷史已壓縮、與上游無共同祖先，採 `cherry-pick -x`。基準代表已審查，不代表全部合併。本輪：14 個 commit、83 筆 PR、23 筆 issue。
+
+### commit 軸（14 筆）
+
+- **採用（8 筆，cherry-pick -x 無衝突；`tools\test_product.ps1` 901 passed／5 skipped）**：#2462 Outlook MSG 日文 code page（CJK 類）、`f0c5d01` 與 #2464 CSV 空白列／pipe 跳脫效能、#2466 charset 偵測不切斷 UTF-8 字元（CJK 類）、#2467 docx 樣式修復保留 namespace、#2469 YouTube 無內容時回退 HTML、#2477 保留空白底線、#2476 圖片轉換器在 LLM client 失敗時擲錯（僅採程式碼與測試；README 一段與本 fork 繁中 README 衝突，保留本 fork 版本）。
+- **採用待辦（adoption pending）**：#2506 OCR 轉換器改用核心管線（重構，牽動 markitdown-ocr 多檔，本機無 LLM／OCR 後端可驗證；觸發條件：本 fork 需要 OCR 修正時）；`d51937d` #2407 youtube-transcript-api 升至 >=1.2.3（依賴約束交由本 fork 的依賴新鮮度政策決定）。
+- **不適用**：#2459、#2460 上游 ARM CI；#2490、#2545 上游版本 bump（本 fork 版本自主，見 2026-09-11 條目）。
+
+### PR 軸（83 筆，#2458 至 #2566）
+
+- MERGED 12 筆：7 筆採用（#2462、#2464、#2466、#2467、#2469、#2476、#2477）、2 筆 CI 不適用（#2459、#2460）、2 筆版本 bump 不適用（#2490、#2545）、1 筆待辦（#2506）。
+- OPEN 67 筆：不 fork-ahead（上游尚未合併，本 fork 政策見 2026-09-11 條目）。涵蓋 HTML／XLSX／DOCX／PPTX／ipynb／RSS／EPUB／PDF 轉換修正、新功能（YAML、XMind、Claude OCR 後端）與效能項。CJK 或 Windows 相關者觸發條件：上游合併後隨 commit 軸抵達——#2541（Outlook MSG UTF-16 NUL）、#2543（quoted charset）、#2517（CSV 分隔符號）、#2539（阿拉伯文 RTL，非本 fork 語系）。
+- CLOSED 未合併 4 筆：#2494（XMind，被 #2495 取代）、#2505（srcset）、#2512（圖片保留 PDF 轉換）、#2531（heading 夾限，被 #2555 取代）。無 Windows-first 或 CJK 缺陷，不採用。
+
+### issue 軸（23 筆，#2461 至 #2567）
+
+- 16 筆對應上述 OPEN PR 的缺陷（RSS、XLSX、HTML、PPTX、DOCX、code fence、PDF、OCR），隨 PR 合併後抵達。
+- #2474 對應 #2475（OPEN）；#2560、#2565 PDF／OCR 缺陷，待上游修正。
+- 不適用：#2487、#2542、#2551、#2561、#2567（無內容或非本專案問題）、#2544（垃圾推廣訊息）。
