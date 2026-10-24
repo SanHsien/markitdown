@@ -14,7 +14,7 @@
 
 ## 硬性邊界
 
-- 不提交使用者輸入檔案、專有文件、API key、token、私鑰或 `.env`。
+- 不提交測試檔案、使用者輸入檔案、專有文件、API key、token、私鑰或 `.env`。
 - 不推送到 `upstream`。上游同步先跑 `python tools/check_upstream_updates.py`，逐筆審查後再 merge / cherry-pick；不盲目覆蓋 fork 文件與 Windows gate。
 - 不發佈到 PyPI 或取代官方發行管道。上游 workflow 已加 `microsoft/markitdown` 閘門，不要拿掉。
 - 不要把維護 gate 改成完整產品依賴安裝。維護環境（`requirements-dev.txt`）僅安裝 pytest 與 ruff。
@@ -22,6 +22,7 @@
 
 ## 技術與資料流
 
+- 產品程式在 `packages/`，以上游為準。
 - 核心套件：`packages/markitdown`（核心轉換引擎、CLI）。
 - 外掛與延伸套件：`packages/markitdown-ocr`、`packages/markitdown-mcp`、`packages/markitdown-sample-plugin`。
 - `tools/`：fork 維護工具（Windows gate、上游檢查、相對連結檢查、依賴新鮮度）。
