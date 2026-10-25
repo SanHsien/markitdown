@@ -105,6 +105,7 @@
   - #2738：Unicode MSG 字串流尾端的 NUL 被 `strip()` 保留。Windows Outlook 匯出、與 2026-09-30 記錄的 #2541 同類。
   - #2620：音訊大寫副檔名（`.MP3`／`.WAV`）通過 `accepts()` 卻跳過轉譯。Windows 檔名常見大寫；只移植邏輯與測試，不帶上游 PR 的整檔換行改寫。
   - 理由：Windows-first、繁中使用者會直接碰到，修正小且自帶測試。觸發條件：上游合併（或以不同做法合併）這些 PR 時，以上游版本為準重新 cherry-pick，衝突時採上游。
+  - **本機複審（2026-10-25，Windows 11、Python 3.14.9）**：`tools/test_product.ps1 -AllPackages` 1323 passed／3 skipped，0 失敗（含四筆移植自帶的測試與先前雲端因無網路失敗的兩項）。四筆上游仍為 OPEN；缺陷已在本 fork 重現且為純邏輯修正（charset 判斷、BOM 剝除、NUL 剝除、副檔名大小寫），沒有套用上游 diff 的相依問題。結論：保留，不 revert。這不改變「其他 OPEN PR 不 fork-ahead」政策，只是四筆小修正的例外，不涉產品方向。
 - **其他 OPEN 116 筆**：維持 2026-09-11 的不 fork-ahead 政策，等上游合併後隨 commit 軸抵達。值得注意者與觸發條件：
   - #2621／#2622（`convert_uri` SSRF 目的地政策）：安全性相關，但牽動 MCP 與 URI 擷取行為，屬產品取捨。觸發條件：上游合併，或本 fork 對外提供 MCP HTTP 服務時。
   - #2679／#2723（cp1252 偵測，issue #2678）：可能影響 CJK 舊碼頁偵測。觸發條件：上游合併後跑 CJK charset 測試再採。
