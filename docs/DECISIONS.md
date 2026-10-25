@@ -83,16 +83,16 @@
 
 ## 2026-10-25：第三輪上游審查（commit 至 7482c09、PR 至 #2755、issue 至 #2744）
 
-本輪：20 個 commit、144 筆 PR、39 筆 issue。全部 `cherry-pick -x`；`tools\test_product.ps1 -AllPackages` 等價測試（Linux 雲端，Python 3.13）1312 passed／12 skipped，僅 `test_speech_transcription`、`test_markitdown_remote` 因沙箱無對外網路失敗。
+本輪：20 個 commit、144 筆 PR、39 筆 issue。除 #2620 為手動移植外，全部 `cherry-pick -x`；`tools\test_product.ps1 -AllPackages` 等價測試（Linux 雲端，Python 3.13）1312 passed／12 skipped，僅 `test_speech_transcription`、`test_markitdown_remote` 因沙箱無對外網路失敗。
 
 ### commit 軸（20 筆）
 
 - **採用（18 筆）**：#1511、#1850、#1656（`sys.stdout.encoding` 為 None 的 CLI 輸出，Windows 重導向情境）、#1295、#1510、#1919、#2458、#2579、#2586、#2588、#2592、#2594、#2597、#2601（測試整併與真實 fixture）、#2722（magika `>=0.6.1,<2`，對應 issue #2719）、#2729（mammoth `>=1.12.2,<2`，對應 issue #2646）、#2730（certifi CA 下限）、#1913（Doc-Intel 模型／features／query fields）。
-- **部分採用**：#2731 只採產品程式碼的 Black 格式與 markitdown-ocr `Pillow>=12.1.1`；不採 `.github/actions/build-arm-cryptography`、`.github/constraints.txt`、`.pre-commit-config.yaml`、`tests.yml`（上游 ARM／pre-commit CI，本 fork 已移除，見 R-08／R-09）。其 dependabot 變更以本 fork 格式重做：補上 `markitdown-ocr`、`markitdown-sample-plugin` 兩個套件目錄。
+- **部分採用**：#2731 只採產品程式碼的 Black 格式與 markitdown-ocr `Pillow>=12.1.1`；不採 `.github/actions/build-arm-cryptography`、`.github/constraints.txt`、`.pre-commit-config.yaml`（上游 ARM／pre-commit CI，本 fork 已移除，見 R-08／R-09），以及 `tests.yml` 的 ARM 步驟。#2586 在 `tests.yml` 加的 Linux 專用 apt-get 步驟同樣移除（`tests.yml` 只在 `microsoft/markitdown` 執行，且本 fork 為純 Windows，見 R-09）。其 dependabot 變更以本 fork 格式重做：補上 `markitdown-ocr`、`markitdown-sample-plugin` 兩個套件目錄。
 - **不適用**：#2733 版本 bump（本 fork 版本自主）。
 - **2026-09-30 待辦的 #2506 已採用**：觸發條件成立——上游 #2579／#2588 的整併測試直接依賴 #2506 的 `_xlsx_images`／`docx/_images` 與 OCR 繼承測試，不採就無法再同步上游測試。
 - **#1913 README**：英文段落併進 `README.en.md`。繁中 `README.md` 是精簡入口、本來就不含 Doc-Intel 細節，不翻譯；順手把 `result.text_content`（已棄用）改成 `result.markdown`（同上游 #2591 的做法）。
-- **依賴清單同步**：`requirements.txt` 加 `certifi`、magika 改 `>=0.6.1,<2`；`requirements-all.txt` mammoth 改 `>=1.12.2,<2`，並補上 markitdown-ocr 原本漏列的 `PyMuPDF>=1.24.0,<2`、`Pillow>=12.1.1`（共 29 項）。都是跟隨上游宣告，不是為了消紅燈調下限。
+- **依賴清單同步**：`requirements.txt` 加 `certifi`、magika 改 `>=0.6.1,<2`；`requirements-all.txt` mammoth 改 `>=1.12.2,<2`，並補上 markitdown-ocr 原本漏列的 `PyMuPDF>=1.24.0,<2`、`Pillow>=12.1.1`。三個需求檔合計 29 項（dev 2、核心 7、全套 20）。都是跟隨上游宣告，不是為了消紅燈調下限。
 
 ### PR 軸（144 筆，#2568 至 #2755）
 
