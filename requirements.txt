@@ -1,7 +1,8 @@
 # MarkItDown 核心依賴（純文字、HTML 與基礎轉換）
 beautifulsoup4>=4.11.0  # freshness-hold: upstream compatibility floor
 requests>=2.28.0  # freshness-hold: upstream compatibility floor
+certifi>=2026.10.19  # freshness-hold: upstream CA trust floor
 markdownify>=0.11.6  # freshness-hold: upstream compatibility floor
-magika~=0.6.1  # freshness-hold: upstream pinned to 0.6.x line
+magika>=0.6.1,<2  # freshness-hold: upstream compatibility floor; <2 ceiling
 charset-normalizer>=3.0.0  # freshness-hold: upstream compatibility floor
 defusedxml>=0.7.1  # freshness-hold: upstream compatibility floor

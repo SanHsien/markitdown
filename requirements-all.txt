@@ -2,7 +2,7 @@
 
 # Office 辦公文件（PowerPoint、Word、Excel）
 python-pptx>=1.0.0  # freshness-hold: upstream compatibility floor
-mammoth~=1.11.0  # freshness-hold: upstream pinned to 1.11.x line
+mammoth>=1.12.2,<2  # freshness-hold: upstream compatibility floor; <2 ceiling
 lxml>=5.0.0  # freshness-hold: upstream compatibility floor
 pandas>=2.0.0  # freshness-hold: upstream compatibility floor
 openpyxl>=3.1.0  # freshness-hold: upstream compatibility floor
@@ -25,6 +25,8 @@ azure-identity>=1.15.0  # freshness-hold: upstream compatibility floor
 
 # 套件擴充與外掛支援（markitdown-ocr, markitdown-mcp, markitdown-sample-plugin）
 python-docx>=1.0.0  # freshness-hold: upstream compatibility floor for markitdown-ocr
+PyMuPDF>=1.24.0,<2  # freshness-hold: upstream compatibility floor for markitdown-ocr; upstream caps below 2.x
+Pillow>=12.1.1  # freshness-hold: upstream compatibility floor for markitdown-ocr
 mcp>=2.1.1  # freshness-hold: upstream compatibility floor for markitdown-mcp
 striprtf>=0.0.26  # freshness-hold: upstream compatibility floor for markitdown-sample-plugin
 

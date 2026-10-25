@@ -33,6 +33,25 @@ updates:
     open-pull-requests-limit: 5
     labels: ["dependencies", "python"]
 
+  - package-ecosystem: "pip"
+    directory: "/packages/markitdown-ocr"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Asia/Taipei"
+    open-pull-requests-limit: 5
+    labels: ["dependencies", "python"]
+
+  - package-ecosystem: "pip"
+    directory: "/packages/markitdown-sample-plugin"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Asia/Taipei"
+    open-pull-requests-limit: 5
+    labels: ["dependencies", "python"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
