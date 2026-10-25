@@ -129,5 +129,5 @@
 推上 main 後 `Upstream check` 再列出 9 筆 PR、1 筆 issue（commit 軸無新增）。全部 OPEN、不 fork-ahead：
 
 - #2756（ZIP 無 UTF-8 旗標的非 ASCII 檔名）：缺陷存在（目前以 cp437 顯示成亂碼），但 PR 依 charset_normalizer 猜碼，短的 Big5（cp950）檔名會被誤判成 `shift_jis_2004`：「臺灣報告.pdf」解成「ｻOﾆWｳ茈i.pdf」（「會議紀錄.docx」則正確）。對繁中 Windows 使用者不夠好，不採。觸發條件：上游合併時，先補 cp950 檔名測試，通過才採；或本 fork 改成優先試 `locale.getpreferredencoding()`／`metadata_encoding` 的版本。
-- #2757（OMML 分隔符多參數，issue #2573，同題 #2574／#2654）、#2758（PPTX 圖表缺值顯示 None，同題 #2632／#2655／#2657）、#2760（方程式 LaTeX 被 Markdown 跳脫，issue #2744，同題 #2745／#2755）：同題重複，等上游擇一合併。
+- #2757（OMML 分隔符多參數，issue #2573，同題 #2574／#2636／#2654，#2665 部分重疊）、#2758（PPTX 圖表缺值顯示 None，同題 #2632／#2655／#2657）、#2760（方程式 LaTeX 被 Markdown 跳脫，issue #2744，同題 #2745／#2755）：同題重複，等上游擇一合併。
 - #2759（PPTX 段落空行）、#2761（HTML 巢狀表格）、#2763（ipynb 字串 source 標題，對應 issue #2762）、#2764（XLSX 文件）、#2765（試算表空格 NaN）：一般產品修正，等上游合併。
