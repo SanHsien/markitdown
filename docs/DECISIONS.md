@@ -123,3 +123,11 @@
 ### 依賴新鮮度
 
 - ruff 0.17.2：tools 的 E9+F gate 全綠，`>=0.16` 已涵蓋，記入 `.github/dependency-deferrals.json`（`deferredLatest: 0.17.2`）。
+
+### 同日補審（PR 至 #2765、issue 至 #2762）
+
+推上 main 後 `Upstream check` 再列出 9 筆 PR、1 筆 issue（commit 軸無新增）。全部 OPEN、不 fork-ahead：
+
+- #2756（ZIP 無 UTF-8 旗標的非 ASCII 檔名）：缺陷存在（目前以 cp437 顯示成亂碼），但 PR 的偵測偏向 GB 碼：以 Big5（cp950）寫入的「臺灣報告.pdf」會被解成「ｻOﾆWｳ茈i.pdf」。對繁中 Windows 使用者不夠好，不採。觸發條件：上游合併時，先補 cp950 檔名測試，通過才採；或本 fork 改成優先試 `locale.getpreferredencoding()`／`metadata_encoding` 的版本。
+- #2757、#2758、#2760：與前述 #2574／#2632／#2745 等同題重複。
+- #2759（PPTX 段落空行）、#2761（HTML 巢狀表格）、#2763（ipynb 字串 source 標題，對應 issue #2762）、#2764（XLSX 文件）、#2765（試算表空格 NaN）：一般產品修正，等上游合併。
