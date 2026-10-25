@@ -112,3 +112,9 @@ Baseline 代表「已審查」，不代表「全部已合併」。
 
 - commit 水位：`b8f79c57ebc0044be41323d89b2a45d3fda8460e`（14 筆；採用 8 筆）；PR 水位 **#2566**（83 筆）；issue 水位 **#2567**（23 筆）。
 - 詳見 [`DECISIONS.md`](DECISIONS.md) 2026-09-30 條目。
+
+## 2026-10-25：第三輪 triage，水位推進到 `7482c09`
+
+- commit 水位：`7482c092d9c0074a89803c9fdb63a969e7fe17fc`（20 筆；採用 18 筆、部分採用 1 筆，另補採 2026-09-30 待辦的 #2506）；PR 水位 **#2755**（144 筆，例外移植 4 筆 OPEN PR）；issue 水位 **#2744**（39 筆）。
+- 雲端 session 無 upstream API 權限時，PR／issue 清單取自本 fork `Upstream check` workflow 的報告，PR 狀態以 `git ls-remote upstream 'refs/pull/*/merge'` 判斷，diff 以 `git fetch upstream refs/pull/<n>/head` 讀取。
+- 詳見 [`DECISIONS.md`](DECISIONS.md) 2026-10-25 條目。

@@ -126,14 +126,14 @@ md = MarkItDown()
 
 # 轉換本機檔案
 result = md.convert("quarterly_report.xlsx")
-print(result.text_content)
+print(result.markdown)
 
 # 搭配 LLM 提供更進一步的內容詮釋（以 OpenAI 範例）
 # from openai import OpenAI
 # client = OpenAI()
 # md_with_llm = MarkItDown(llm_client=client, llm_model="gpt-4o")
 # result = md_with_llm.convert("sample_image.jpg")
-# print(result.text_content)
+# print(result.markdown)
 ```
 
 ---

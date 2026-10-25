@@ -80,3 +80,46 @@
 - 16 筆對應上述 OPEN PR 的缺陷（RSS、XLSX、HTML、PPTX、DOCX、code fence、PDF、OCR），隨 PR 合併後抵達。
 - #2474 對應 #2475（OPEN）；#2560、#2565 PDF／OCR 缺陷，待上游修正。
 - 不適用：#2487、#2542、#2551、#2561、#2567（無內容或非本專案問題）、#2544（垃圾推廣訊息）。
+
+## 2026-10-25：第三輪上游審查（commit 至 7482c09、PR 至 #2755、issue 至 #2744）
+
+本輪：20 個 commit、144 筆 PR、39 筆 issue。全部 `cherry-pick -x`；`tools\test_product.ps1 -AllPackages` 等價測試（Linux 雲端，Python 3.13）1312 passed／12 skipped，僅 `test_speech_transcription`、`test_markitdown_remote` 因沙箱無對外網路失敗。
+
+### commit 軸（20 筆）
+
+- **採用（18 筆）**：#1511、#1850、#1656（`sys.stdout.encoding` 為 None 的 CLI 輸出，Windows 重導向情境）、#1295、#1510、#1919、#2458、#2579、#2586、#2588、#2592、#2594、#2597、#2601（測試整併與真實 fixture）、#2722（magika `>=0.6.1,<2`，對應 issue #2719）、#2729（mammoth `>=1.12.2,<2`，對應 issue #2646）、#2730（certifi CA 下限）、#1913（Doc-Intel 模型／features／query fields）。
+- **部分採用**：#2731 只採產品程式碼的 Black 格式與 markitdown-ocr `Pillow>=12.1.1`；不採 `.github/actions/build-arm-cryptography`、`.github/constraints.txt`、`.pre-commit-config.yaml`、`tests.yml`（上游 ARM／pre-commit CI，本 fork 已移除，見 R-08／R-09）。其 dependabot 變更以本 fork 格式重做：補上 `markitdown-ocr`、`markitdown-sample-plugin` 兩個套件目錄。
+- **不適用**：#2733 版本 bump（本 fork 版本自主）。
+- **2026-09-30 待辦的 #2506 已採用**：觸發條件成立——上游 #2579／#2588 的整併測試直接依賴 #2506 的 `_xlsx_images`／`docx/_images` 與 OCR 繼承測試，不採就無法再同步上游測試。
+- **#1913 README**：英文段落併進 `README.en.md`。繁中 `README.md` 是精簡入口、本來就不含 Doc-Intel 細節，不翻譯；順手把 `result.text_content`（已棄用）改成 `result.markdown`（同上游 #2591 的做法）。
+- **依賴清單同步**：`requirements.txt` 加 `certifi`、magika 改 `>=0.6.1,<2`；`requirements-all.txt` mammoth 改 `>=1.12.2,<2`，並補上 markitdown-ocr 原本漏列的 `PyMuPDF>=1.24.0,<2`、`Pillow>=12.1.1`（共 29 項）。都是跟隨上游宣告，不是為了消紅燈調下限。
+
+### PR 軸（144 筆，#2568 至 #2755）
+
+狀態以 `refs/pull/*/merge` 是否存在判斷（無 merge ref = 已關閉或有衝突）。
+
+- **MERGED 12 筆**：即上述 commit（#2579、#2586、#2588、#2592、#2594、#2597、#2601、#2722、#2729、#2730、#2731、#2733）。
+- **例外移植 4 筆 OPEN PR**（先在本 fork 重現缺陷、PR 自帶測試）：
+  - #2674：短的非 ASCII UTF-8 文字被 charset 偵測誤判為 UTF-16 而變亂碼（`"ok ✓"` → `"潫⃢鲓"`）。CJK／符號文字直接受害。
+  - #2742：宣告 charset 時 UTF-8 BOM 會留在 Markdown 開頭，讓 `# 標題` 不再是標題。Windows 工具（PowerShell 5 `Out-File -Encoding utf8` 等）常寫 BOM。
+  - #2738：Unicode MSG 字串流尾端的 NUL 被 `strip()` 保留。Windows Outlook 匯出、與 2026-09-30 記錄的 #2541 同類。
+  - #2620：音訊大寫副檔名（`.MP3`／`.WAV`）通過 `accepts()` 卻跳過轉譯。Windows 檔名常見大寫；只移植邏輯與測試，不帶上游 PR 的整檔換行改寫。
+  - 理由：Windows-first、繁中使用者會直接碰到，修正小且自帶測試。觸發條件：上游合併（或以不同做法合併）這些 PR 時，以上游版本為準重新 cherry-pick，衝突時採上游。
+- **其他 OPEN 116 筆**：維持 2026-09-11 的不 fork-ahead 政策，等上游合併後隨 commit 軸抵達。值得注意者與觸發條件：
+  - #2621／#2622（`convert_uri` SSRF 目的地政策）：安全性相關，但牽動 MCP 與 URI 擷取行為，屬產品取捨。觸發條件：上游合併，或本 fork 對外提供 MCP HTTP 服務時。
+  - #2679／#2723（cp1252 偵測，issue #2678）：可能影響 CJK 舊碼頁偵測。觸發條件：上游合併後跑 CJK charset 測試再採。
+  - #2754（加密 Office 文件錯誤訊息）、#2628（串流緩衝）、#2673（CLI MIME 參數）：一般修正，等上游合併。
+  - 新格式／功能（#2676 MHTML、#2677 SRT、#2707 ODF、#2700 CLI LLM 選項、#2710、#2739、#2751 等）：等上游決定。
+- **無 merge ref 12 筆**：#2568、#2599、#2630、#2631、#2632、#2635、#2636、#2647、#2656、#2699、#2720、#2748。多為同題重複 PR（已有其他 OPEN PR 或已被 #2722／#2729 取代），#2748（antiword `.doc`）需外部執行檔、非 Windows 原生。不採用。
+
+### issue 軸（39 筆，#2569 至 #2744）
+
+- **已由本輪修正**：#2646（mammoth）、#2719（magika）。
+- **對應 OPEN PR、隨上游合併抵達**：#2569、#2571、#2573、#2580、#2610、#2642、#2644、#2667、#2678、#2688、#2690、#2701、#2724、#2728、#2743、#2744。
+- **不適用**：#2581（VS Code MCP gallery 版本，上游發行管道）。
+- **觸發條件**：#2740（Python 3.15）——上游 CI 加入 3.15 時，本 fork `ci.yml` 矩陣同步加入。
+- **無內容或垃圾**：#2582、#2583、#2584、#2604、#2613、#2617、#2624、#2641、#2671、#2680、#2683、#2684、#2695、#2703、#2705、#2713、#2716、#2735、#2741。
+
+### 依賴新鮮度
+
+- ruff 0.17.2：tools 的 E9+F gate 全綠，`>=0.16` 已涵蓋，記入 `.github/dependency-deferrals.json`（`deferredLatest: 0.17.2`）。
