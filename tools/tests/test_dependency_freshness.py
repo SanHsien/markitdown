@@ -97,3 +97,43 @@ def test_report_names_both_exits_so_the_next_person_does_not_invent_a_third() ->
     assert "freshness-hold:" in report
     assert "dependency-deferrals.json" in report
     assert "mute button" in report
+
+
+@pytest.mark.parametrize(
+    ("declared", "deferral_key"),
+    [
+        ("typing_extensions", "typing-extensions"),
+        ("pdfminer.six", "pdfminer-six"),
+        ("Typing-Extensions", "typing_extensions"),
+    ],
+)
+def test_deferral_matches_the_package_under_any_pep503_spelling(
+    monkeypatch: pytest.MonkeyPatch, declared: str, deferral_key: str
+) -> None:
+    monkeypatch.setattr(checker, "fetch_pypi_version", lambda name: "9.1.0")
+    packages = checker.parse_requirements(f"{declared}>=8.3\n", "requirements.txt")
+    rows = checker.collect_status(
+        packages,
+        deferrals={checker.normalize_name(deferral_key): ("9.1", "reviewed, not now")},
+    )
+    assert checker.needs_review(rows[0]) is False
+
+
+def test_load_deferrals_keys_are_normalized(tmp_path: Path) -> None:
+    path = tmp_path / "dependency-deferrals.json"
+    path.write_text(
+        json.dumps(
+            {"deferrals": {"Typing_Extensions": {"deferredLatest": "4.1", "reason": "r"}}}
+        ),
+        encoding="utf-8",
+    )
+    assert list(checker.load_deferrals(path)) == ["typing-extensions"]
+
+
+def test_same_package_spelled_two_ways_is_reported_once(tmp_path: Path) -> None:
+    for name in checker.REQUIREMENT_FILES:
+        (tmp_path / name).write_text("", encoding="utf-8")
+    (tmp_path / "requirements.txt").write_text("pdfminer.six>=1\n", encoding="utf-8")
+    (tmp_path / "requirements-all.txt").write_text("pdfminer-six>=2\n", encoding="utf-8")
+    packages = checker.load_direct_dependencies(tmp_path)
+    assert [p["minimum"] for p in packages] == ["1"]

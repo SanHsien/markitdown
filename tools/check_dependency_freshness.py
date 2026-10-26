@@ -42,6 +42,11 @@ class DependencyCheckError(RuntimeError):
     """Raised when a requirements file cannot be read."""
 
 
+def normalize_name(name: str) -> str:
+    """PEP 503 form, so ``Typing_Extensions`` and ``typing-extensions`` are one package."""
+    return re.sub(r"[-_.]+", "-", name).lower()
+
+
 def release_key(version: str) -> tuple[int, ...] | None:
     match = _RELEASE_RE.match(version.strip())
     if not match:
@@ -71,7 +76,7 @@ def load_deferrals(path: Path = DEFERRALS_PATH) -> dict[str, tuple[str, str]]:
         latest = str(entry.get("deferredLatest", "")).strip()
         reason = str(entry.get("reason", "")).strip()
         if latest and reason:
-            deferrals[name.lower()] = (latest, reason)
+            deferrals[normalize_name(name)] = (latest, reason)
     return deferrals
 
 
@@ -109,7 +114,7 @@ def load_direct_dependencies(root: Path = REPO_ROOT) -> list[dict[str, str]]:
         if not path.is_file():
             raise DependencyCheckError(f"missing requirements file: {name}")
         for package in parse_requirements(path.read_text(encoding="utf-8"), name):
-            key = package["name"].lower().replace("_", "-")
+            key = normalize_name(package["name"])
             if key in seen:
                 continue
             seen.add(key)
@@ -141,7 +146,7 @@ def collect_status(
     for package in packages:
         minimum = package["minimum"]
         latest = fetch_pypi_version(package["name"])
-        reviewed, reason = deferrals.get(package["name"].lower(), ("", ""))
+        reviewed, reason = deferrals.get(normalize_name(package["name"]), ("", ""))
         deferred = bool(reviewed and latest and not is_newer_version(latest, reviewed))
         rows.append(
             {
