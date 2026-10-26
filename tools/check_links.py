@@ -91,8 +91,11 @@ def _missing_relative(path: Path, target: str) -> str | None:
     if not file_part:
         return None
     resolved = (path.parent / file_part).resolve()
-    if resolved.exists() and _case_matches(Path(os.path.abspath(path.parent / file_part))):
-        return None
+    exact = Path(os.path.abspath(path.parent / file_part))
+    if resolved.exists():
+        if _case_matches(exact):
+            return None
+        return f"{target} → 大小寫與磁碟上的檔名不符（{resolved}）"
     try:
         shown = resolved.relative_to(ROOT)
     except ValueError:

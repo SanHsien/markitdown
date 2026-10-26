@@ -43,6 +43,6 @@ def test_hatch_test_extra_dependencies_are_declared_in_requirements_all() -> Non
     missing = sorted(
         requirement
         for requirement in needed
-        if checker.normalize_name(re.split(r"[<>=!~\[ ;]", requirement, 1)[0]) not in declared
+        if checker.normalize_name(re.split(r"[<>=!~\[ ;]", requirement, maxsplit=1)[0]) not in declared
     )
     assert not missing, f"requirements-all.txt 缺少產品測試依賴: {missing}"
