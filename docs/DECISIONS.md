@@ -142,3 +142,29 @@
 - 只含 BOM 加三個以內 ASCII 字元的 `.md` 檔（例如 `﻿# H`）：magika 對極短內容判不出類型，沒有 charset，`PlainTextConverter` 退回 charset_normalizer 而誤判成 Shift-JIS 類編碼，輸出亂碼。四個字元以上正常。觸發條件：實際遇到極短 BOM 檔再處理（可在無 charset 時先試嚴格 UTF-8）。
 - `check_links` 會檢查程式碼區塊裡的範例連結；目前維護文件沒有受害者。
 - `_strip_terminators` 對 `abc  `（NUL 後接空白）不會去掉 NUL；常見寫入端只補 NUL，不處理。
+
+## 2026-10-26（第二次補審）：上游 PR #2766–#2775
+
+Commit 軸無新增（上游 `main` 仍是 `7482c09`），issue 軸無新增（仍 `#2762`）。新增 10 筆 PR，全部以 `git fetch <upstream> refs/pull/<n>/head` 取**目前的 head** 並確認與 `gh pr view` 的 `headRefOid` 相同後才讀 diff；對 10 筆的新增行、commit 訊息、PR 本文、留言與 review 掃零寬／雙向控制字元、HTML 註解與控制碼：新增行與 commit 訊息命中 0；本文與留言只有 #2768、#2770、#2773 上 CLA 機器人的 `<!-- Policy app identification ... -->` 標記，其餘無任何藏起來的內容。**全部不採用**，維持 2026-09-11 起的「OPEN 的上游 PR 不 fork-ahead」政策，唯一例外類別（Windows-first／CJK 且修正小、自帶測試）沒有命中。
+
+### 四筆真實修正：缺陷在本 fork 都重現，但不是例外類別
+
+重現方式：Windows 11、Python 3.14.9、本 fork `origin/main` 的 `packages/markitdown/src`，各依賴為 `requirements-all.txt`。上游這四筆的 merge-base 都是 `7482c09`（即本 fork 的 baseline），所以本 fork 對應的檔案與 PR 的 base 逐位元組相同。
+
+| PR（對應 issue） | 本 fork 重現結果 | 結論與觸發條件 |
+| --- | --- | --- |
+| #2766（XLSX 錯誤值，issue #2728；+64／-4，2 檔） | 含 `#DIV/0!` 儲存格的活頁簿轉成 `\| e \| NaN \|`，與真正空白格無法區分 | 缺陷存在，影響是輸出把錯誤值當成缺值；非 Windows／CJK 專屬。做法是 pandas 轉 HTML 後用 BeautifulSoup 重解析並以 `rows[cell.row - 1][cell.column - 1]` 回填，位置推算依賴 pandas 與 openpyxl 的列欄對齊，還在 review 中（`rahul05ranjan` 留言）。觸發條件：上游合併，之後隨 commit 軸抵達並以上游版本為準。 |
+| #2768（ipynb `source` 為字串，issue #2762；+57／-1，2 檔） | `source` 為字串的 notebook：`title` 為 `None`，內文仍正確（`'# My Title
+hello'`） | 缺陷存在，只掉標題；非例外類別。觸發條件：上游合併。 |
+| #2774（RSS 1.0／RDF；+136／-10，2 檔） | `.rdf` 的 RSS 1.0 輸入原樣回傳 XML（前綴 `<?xml ... <rdf:RDF`），沒有轉換 | 是新增格式支援，不是回歸；非例外類別。觸發條件：上游合併，或本 fork 的使用者實際餵 RSS 1.0 來源。 |
+| #2775（data URI 片段，issue #2690；+17／0，2 檔） | `parse_data_uri("data:text/plain,Hello#section")` 回 `b'Hello#section'`；base64 版 `...SGVsbG8h#AAAA` 回 `b'Hello!   '` | 缺陷存在且 base64 版會多出 NUL 位元組，但需要輸入端刻意帶 `#` 片段；非例外類別。與 #2621／#2622（`convert_uri` 目的地政策）同屬 URI 輸入面，等上游一起決定。觸發條件：上游合併，或本 fork 開始處理來源不明的 data URI。 |
+
+四筆都已有上游測試，上游合併後 cherry-pick 的成本只有一個 commit，所以先不分叉；這與 2026-10-25 例外移植的四筆（charset、BOM、NUL、副檔名大小寫）的差別是：那四筆是 Windows 工具與繁中文字直接會碰到的輸出，這四筆不是。
+
+### 六筆無產品價值（雜訊或重送）
+
+- #2769（CLOSED 未合併）：標題是 `feat(doc-intel): expose models, features, query fields, and structure…`，本文是 #1913 的 squash 訊息。它的 merge-base 是較舊的 `21d9c1d`，`git diff refs/upstream-check/main refs/upstream-check/pr/2769` 只剩 `README.md` 末尾 3 行（`!!!!!!!!HELL0 W0RLD!!!!!!!`、`ejdejjnj`），也就是產品內容與上游 `main` 已有的 #1913（`7482c09`，本 fork 2026-10-25 已採用）相同，只多了垃圾文字。無新內容。
+- #2767（CLOSED，README 殘留 `<<<<<<< HEAD` 衝突標記與亂碼）、#2772（CLOSED，把 README 簡介換成 "very useful tool that I can use"）、#2770（OPEN，刪 README 106 行）、#2773（OPEN，刪 README 52 行）：README 破壞性改動，本 fork 有自己的繁中／英文 README，不適用。
+- #2771（OPEN）：把 `SECURITY.md` 的 MSRC 回報連結換成字串 `777`。這是上游的安全回報管道被破壞，屬破壞行為；本 fork 的 `SECURITY.md` 是自己的（GitHub Security Advisories，只在上游核心問題才指向 MSRC），不受影響，不採用。
+
+水位：PR `#2765`→`#2775`；Issue 不變（`#2762`）；Commit 不變（`7482c09`）。
