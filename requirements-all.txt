@@ -30,3 +30,7 @@ Pillow>=12.1.1  # freshness-hold: upstream compatibility floor for markitdown-oc
 mcp>=2.1.1  # freshness-hold: upstream compatibility floor for markitdown-mcp
 striprtf>=0.0.26  # freshness-hold: upstream compatibility floor for markitdown-sample-plugin
 
+
+# 產品測試（上游 hatch-test 環境的額外依賴；沒有它們 test_docintel_converter 收集即失敗）
+openai>=1.0.0  # freshness-hold: test-only, upstream declares it unpinned in hatch-test
+pyyaml>=6.0  # freshness-hold: test-only, upstream declares it unpinned in hatch-test
