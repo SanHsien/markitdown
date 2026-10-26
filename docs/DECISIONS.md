@@ -132,3 +132,13 @@
 - #2756（ZIP 無 UTF-8 旗標的非 ASCII 檔名）：缺陷存在（目前以 cp437 顯示成亂碼），但 PR 依 charset_normalizer 猜碼，短的 Big5（cp950）檔名會被誤判成 `shift_jis_2004`：「臺灣報告.pdf」解成「ｻOﾆWｳ茈i.pdf」（「會議紀錄.docx」則正確）。對繁中 Windows 使用者不夠好，不採。觸發條件：上游合併時，先補 cp950 檔名測試，通過才採；或本 fork 改成優先試 `locale.getpreferredencoding()`／`metadata_encoding` 的版本。
 - #2757（OMML 分隔符多參數，issue #2573，同題 #2574／#2636／#2654，#2665 部分重疊）、#2758（PPTX 圖表缺值顯示 None，同題 #2632／#2655／#2657）、#2760（方程式 LaTeX 被 Markdown 跳脫，issue #2744，同題 #2745／#2755）：同題重複，等上游擇一合併。
 - #2759（PPTX 段落空行）、#2761（HTML 巢狀表格）、#2763（ipynb 字串 source 標題，對應 issue #2762）、#2764（XLSX 文件）、#2765（試算表空格 NaN）：一般產品修正，等上游合併。
+
+## 2026-10-26：深度品質掃描（fork 自家程式）
+
+修了四個維護工具缺陷（各有先失敗的重現測試）：`check_links` 在 Windows 不分大小寫而放行大小寫錯的連結、`check_links` 把連結標題算進路徑、依賴延後清單與去重沒做 PEP 503 正規化、`requirements-all.txt` 缺 hatch-test 額外依賴 `openai`／`pyyaml`。
+
+觀察清單（不改，上游或影響極小）：
+
+- 只含 BOM 加三個以內 ASCII 字元的 `.md` 檔（例如 `﻿# H`）：magika 對極短內容判不出類型，沒有 charset，`PlainTextConverter` 退回 charset_normalizer 而誤判成 Shift-JIS 類編碼，輸出亂碼。四個字元以上正常。觸發條件：實際遇到極短 BOM 檔再處理（可在無 charset 時先試嚴格 UTF-8）。
+- `check_links` 會檢查程式碼區塊裡的範例連結；目前維護文件沒有受害者。
+- `_strip_terminators` 對 `abc  `（NUL 後接空白）不會去掉 NUL；常見寫入端只補 NUL，不處理。
