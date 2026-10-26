@@ -79,7 +79,12 @@ def _case_matches(target: Path) -> bool:
 
 
 def _missing_relative(path: Path, target: str) -> str | None:
-    target = target.strip().strip("<>")
+    target = target.strip()
+    if target.startswith("<"):
+        target = target[1:].split(">", 1)[0]
+    else:
+        # `[text](path "title")`: the title is not part of the path.
+        target = re.split(r"\s+[\"'(]", target, maxsplit=1)[0]
     if not target or target.startswith(SKIP_PREFIXES):
         return None
     file_part = unquote(target.split("#", 1)[0])

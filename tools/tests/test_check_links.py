@@ -33,3 +33,18 @@ def test_link_with_exact_case_passes(docs_root: Path) -> None:
     doc = docs_root / "README.md"
     doc.write_text("[a](docs/Guide.md#top) [b](./docs/../docs/Guide.md)\n", encoding="utf-8")
     assert check_links.check_document(doc) == []
+
+
+def test_link_with_title_is_checked_against_its_path_only(docs_root: Path) -> None:
+    doc = docs_root / "README.md"
+    doc.write_text(
+        '[a](docs/Guide.md "the guide") [b](docs/Guide.md \'t\') [c](<docs/Guide.md> "t")\n',
+        encoding="utf-8",
+    )
+    assert check_links.check_document(doc) == []
+
+
+def test_missing_target_with_title_is_still_reported(docs_root: Path) -> None:
+    doc = docs_root / "README.md"
+    doc.write_text('[a](docs/Nope.md "the guide")\n', encoding="utf-8")
+    assert len(check_links.check_document(doc)) == 1
