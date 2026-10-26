@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 import sys
 from pathlib import Path
@@ -59,6 +60,24 @@ def iter_documents() -> list[Path]:
     return required
 
 
+def _case_matches(target: Path) -> bool:
+    """True when every segment under ROOT is spelled exactly as it is on disk.
+
+    Windows resolves ``docs/guide.md`` to ``docs/Guide.md``, so ``exists()`` alone
+    passes a link that GitHub and Linux checkouts cannot follow.
+    """
+    try:
+        relative = target.relative_to(ROOT)
+    except ValueError:
+        return True
+    current = ROOT
+    for part in relative.parts:
+        if part not in os.listdir(current):
+            return False
+        current = current / part
+    return True
+
+
 def _missing_relative(path: Path, target: str) -> str | None:
     target = target.strip().strip("<>")
     if not target or target.startswith(SKIP_PREFIXES):
@@ -67,7 +86,7 @@ def _missing_relative(path: Path, target: str) -> str | None:
     if not file_part:
         return None
     resolved = (path.parent / file_part).resolve()
-    if resolved.exists():
+    if resolved.exists() and _case_matches(Path(os.path.abspath(path.parent / file_part))):
         return None
     try:
         shown = resolved.relative_to(ROOT)
