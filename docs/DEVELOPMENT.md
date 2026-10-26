@@ -47,6 +47,9 @@ pwsh -NoProfile -File tools\bootstrap_dev.ps1 -All
 # 執行指定模組測試或全套測試
 pwsh -NoProfile -File tools\test_product.ps1
 pwsh -NoProfile -File tools\test_product.ps1 packages/markitdown/tests/test_file_paths.py
+
+# 四個套件的測試一次跑完（先 bootstrap_dev.ps1 -All 裝齊依賴）
+pwsh -NoProfile -File tools\test_product.ps1 -AllPackages
 ```
 
 ## Canonical Gate
