@@ -141,7 +141,7 @@
 
 - 只含 BOM 加三個以內 ASCII 字元的 `.md` 檔（例如 `﻿# H`）：magika 對極短內容判不出類型，沒有 charset，`PlainTextConverter` 退回 charset_normalizer 而誤判成 Shift-JIS 類編碼，輸出亂碼。四個字元以上正常。觸發條件：實際遇到極短 BOM 檔再處理（可在無 charset 時先試嚴格 UTF-8）。
 - `check_links` 會檢查程式碼區塊裡的範例連結；目前維護文件沒有受害者。
-- `_strip_terminators` 對 `abc  `（NUL 後接空白）不會去掉 NUL；常見寫入端只補 NUL，不處理。
+- `_strip_terminators` 對 `abc\x00 `（NUL 後接空白）不會去掉 NUL；常見寫入端只補 NUL，不處理。
 
 ## 2026-10-26（第二次補審）：上游 PR #2766–#2775
 
@@ -154,10 +154,9 @@ Commit 軸無新增（上游 `main` 仍是 `7482c09`），issue 軸無新增（�
 | PR（對應 issue） | 本 fork 重現結果 | 結論與觸發條件 |
 | --- | --- | --- |
 | #2766（XLSX 錯誤值，issue #2728；+64／-4，2 檔） | 含 `#DIV/0!` 儲存格的活頁簿轉成 `\| e \| NaN \|`，與真正空白格無法區分 | 缺陷存在，影響是輸出把錯誤值當成缺值；非 Windows／CJK 專屬。做法是 pandas 轉 HTML 後用 BeautifulSoup 重解析並以 `rows[cell.row - 1][cell.column - 1]` 回填，位置推算依賴 pandas 與 openpyxl 的列欄對齊，還在 review 中（`rahul05ranjan` 留言）。觸發條件：上游合併，之後隨 commit 軸抵達並以上游版本為準。 |
-| #2768（ipynb `source` 為字串，issue #2762；+57／-1，2 檔） | `source` 為字串的 notebook：`title` 為 `None`，內文仍正確（`'# My Title
-hello'`） | 缺陷存在，只掉標題；非例外類別。觸發條件：上游合併。 |
+| #2768（ipynb `source` 為字串，issue #2762；+57／-1，2 檔） | `source` 為字串的 notebook：`title` 為 `None`，內文仍正確（`'# My Title\nhello'`） | 缺陷存在，只掉標題；非例外類別。觸發條件：上游合併。 |
 | #2774（RSS 1.0／RDF；+136／-10，2 檔） | `.rdf` 的 RSS 1.0 輸入原樣回傳 XML（前綴 `<?xml ... <rdf:RDF`），沒有轉換 | 是新增格式支援，不是回歸；非例外類別。觸發條件：上游合併，或本 fork 的使用者實際餵 RSS 1.0 來源。 |
-| #2775（data URI 片段，issue #2690；+17／0，2 檔） | `parse_data_uri("data:text/plain,Hello#section")` 回 `b'Hello#section'`；base64 版 `...SGVsbG8h#AAAA` 回 `b'Hello!   '` | 缺陷存在且 base64 版會多出 NUL 位元組，但需要輸入端刻意帶 `#` 片段；非例外類別。與 #2621／#2622（`convert_uri` 目的地政策）同屬 URI 輸入面，等上游一起決定。觸發條件：上游合併，或本 fork 開始處理來源不明的 data URI。 |
+| #2775（data URI 片段，issue #2690；+17／0，2 檔） | `parse_data_uri("data:text/plain,Hello#section")` 回 `b'Hello#section'`；base64 版 `...SGVsbG8h#AAAA` 回 `b'Hello!\x00\x00\x00'` | 缺陷存在且 base64 版會多出 NUL 位元組，但需要輸入端刻意帶 `#` 片段；非例外類別。與 #2621／#2622（`convert_uri` 目的地政策）同屬 URI 輸入面，等上游一起決定。觸發條件：上游合併，或本 fork 開始處理來源不明的 data URI。 |
 
 四筆都已有上游測試，上游合併後 cherry-pick 的成本只有一個 commit，所以先不分叉；這與 2026-10-25 例外移植的四筆（charset、BOM、NUL、副檔名大小寫）的差別是：那四筆是 Windows 工具與繁中文字直接會碰到的輸出，這四筆不是。
 
