@@ -167,3 +167,21 @@ Commit 軸無新增（上游 `main` 仍是 `7482c09`），issue 軸無新增（�
 - #2771（OPEN）：把 `SECURITY.md` 的 MSRC 回報連結換成字串 `777`。這是上游的安全回報管道被破壞，屬破壞行為；本 fork 的 `SECURITY.md` 是自己的（GitHub Security Advisories，只在上游核心問題才指向 MSRC），不受影響，不採用。
 
 水位：PR `#2765`→`#2775`；Issue 不變（`#2762`）；Commit 不變（`7482c09`）。
+
+## 2026-10-28（第三次補審）：上游 PR #2776–#2780
+
+Commit 軸無新增（上游 `main` 仍是 `7482c09`），issue 軸無新增（仍 `#2762`）。新增 5 筆 PR，全部 OPEN、未合併。審查方式與前一輪相同：`git fetch <upstream> refs/pull/<n>/head` 取**目前的 head**，確認與 `gh pr view` 的 `headRefOid` 相同後才讀 diff，五筆的 merge-base 都是 `7482c09`（本 fork 的 baseline），所以本 fork 對應檔案與 PR 的 base 逐位元組相同（`git diff upstream/main HEAD -- <三個 converter>` 無差異）。對五筆的新增行掃零寬／雙向控制字元、`\S\s{40,}\S` 空白夾內容、單行超過 200 字、`eval`／`base64`／長 hex、HTML 註解與控制碼：命中 0；PR 本文與留言只有 CLA 同意與一句 "Looks go to me"，無隱藏內容。**全部不採用**，維持「OPEN 的上游 PR 不 fork-ahead」政策；唯一例外類別（Windows-first／CJK，修正小、自帶測試）沒有命中。
+
+重現方式：Windows 11、Python 3.14.9、本 fork `origin/main` 的 `packages/markitdown/src`，依賴為 `requirements-all.txt`（pptx 1.0.2）。五個缺陷在本 fork 都重現：
+
+| PR（對應 issue） | 本 fork 重現結果與對應位置 | 結論與觸發條件 |
+| --- | --- | --- |
+| #2776（XY／氣泡圖資料點被丟掉；+82／-0，2 檔） | XY_SCATTER 圖表轉成 `\| Category \| Revenue \|` 加分隔線就結束，3 個資料點全部消失（`_pptx_converter.py:336` 以 `plots[0].categories` 建列，XY 圖沒有分類軸）。 | 缺陷存在，但只影響 PPTX 內的散佈圖與氣泡圖；PR 自述用資料點序號當列標籤，不是 x 值，作者也承認真正的 x 值要碰私有 XML。非例外類別。觸發條件：上游合併（以上游版本為準），或本 fork 使用者實際轉含散佈圖的簡報。與 2026-10-26 記錄的 #2758（PPTX 圖表缺值，同在 `_convert_chart_to_markdown`）會改同一段，等上游一起定案。 |
+| #2777（ipynb 字串 `source`，issue #2762；+30／-1，2 檔） | `source` 為字串的 notebook：`title` 為 `None`，內文 `'# My Title\nhello'` 正確（`_ipynb_converter.py:79` 對字串逐字元迭代）。 | 缺陷存在，只掉標題。與 #2763、#2768、#2778 四筆同題（同一個 issue #2762），等上游擇一合併。觸發條件：上游合併。 |
+| #2778（同上；+72／-1，2 檔） | 同上。 | 同上。補充：這筆新增 `_as_line_list()` 輔助函式並寫兩個測試，是四筆裡最完整的，若日後要例外移植選這筆；現在不移植的理由與 #2768 相同（非 Windows／CJK，只掉標題）。 |
+| #2779（PPTX 表格後的下一個形狀被併進表格；+53／-1，2 檔） | 表格後接文字方塊轉成 `\| 1 \| 2 \|\nFollow-up analysis.`，沒有空行，渲染後那句話變成表格列（`_pptx_converter.py:321` 的 `.markdown.strip()` 之後只補一個換行）。 | 缺陷存在，影響是 PPTX 表格後面緊接其他形狀時的 Markdown 結構；非 Windows／CJK 專屬。作法是回傳 `\n\n`，簡單且與圖表路徑一致，但與 #2759（PPTX 段落空行，已記等上游）同屬 PPTX 版面空行語意，等上游一起定案較不會重工。觸發條件：上游合併，或本 fork 使用者回報簡報表格輸出被吞。 |
+| #2780（無 entry 的 Atom feed；+48／-3，2 檔） | 只有 title／subtitle／author 的合法 Atom feed，不論 `.atom` 或 `.xml` 都原樣回傳 XML，沒有轉換（`_rss_converter.py:136` 要求至少一個 `<entry>`）。 | 缺陷存在，但空的 Atom feed 是邊角輸入，RFC 4287 允許但少見。非例外類別。與 #2774（RSS 1.0）同屬 `RssConverter` 辨識範圍調整。觸發條件：上游合併，或本 fork 使用者實際餵空 feed。 |
+
+五筆各只動 1 個 converter 加 1 個測試檔，上游合併後 cherry-pick 的成本是一個 commit；這與 2026-10-25 例外移植的四筆（charset、BOM、NUL、副檔名大小寫）的差別是：那四筆是 Windows 工具與繁中文字直接會碰到的輸出，這五筆不是。
+
+水位：PR `#2775`→`#2780`；Issue 不變（`#2762`）；Commit 不變（`7482c09`）。
