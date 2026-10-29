@@ -4,7 +4,7 @@
 > 現況段的數字是 2026-10-29 依 `main` `28901f550c6d` 查的快照，開工前先重查 GitHub。
 
 ## 現況
-這是多格式文件轉 Markdown 的 Windows 維護型 fork，產品與維護工具的安裝、驗收分開（[FORK](FORK.md)、[開發指引](docs/DEVELOPMENT.md)）。2026-10-29 `gh` 查詢顯示 Dependabot／Code scanning 均為 0、CI／CodeQL／Upstream check 最近成功；未採用的上游轉換修正已有重現與觸發條件，不代表沒有已知邊角缺陷（2026-10-29 `gh` 查詢；[裁決](docs/DECISIONS.md):171-185）。
+這是多格式文件轉 Markdown 的 Windows 維護型 fork，產品與維護工具的安裝、驗收分開（[FORK](FORK.md)、[開發指引](docs/DEVELOPMENT.md)）。2026-10-29 `gh` 查詢顯示 Dependabot／Code scanning 均為 0、CI／CodeQL／Upstream check 最近成功；未採用的上游轉換修正已有重現與觸發條件，不代表沒有已知邊角缺陷（2026-10-29 `gh` 查詢；`docs/DECISIONS.md:171-185`）。
 
 ## 近期：可以直接動手
 | 項目 | 為什麼 | 驗收方式 | 建議執行者 | 證據 |
