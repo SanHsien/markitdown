@@ -2,8 +2,8 @@
   "repo": "https://github.com/microsoft/markitdown.git",
   "branch": "main",
   "reviewed_through": "7482c092d9c0074a89803c9fdb63a969e7fe17fc",
-  "reviewed_date": "2026-10-28",
-  "notes": "Fork created from upstream main 9480644 (Added file paths tests. #2454). 2026-10-25 起例外移植 4 筆上游未合併 PR（#2620、#2674、#2738、#2742），理由與觸發條件見 docs/DECISIONS.md 2026-10-25 條目。",
-  "reviewed_pr_through": 2780,
-  "reviewed_issue_through": 2762
+  "reviewed_date": "2026-11-02",
+  "notes": "Fork created from upstream main 9480644 (Added file paths tests. #2454). 2026-10-25 起例外移植 4 筆上游未合併 PR（#2620、#2674、#2738、#2742），理由與觸發條件見 docs/DECISIONS.md 2026-10-25 條目。 2026-11-02：審 PR #2782–#2810（17 筆）與 issue #2781–#2806（12 筆）；例外移植 #2803 的設計（重導向 stdout 一律寫 UTF-8），其餘不採用，理由見 docs/DECISIONS.md 2026-11-02 條目。",
+  "reviewed_pr_through": 2810,
+  "reviewed_issue_through": 2806
 }

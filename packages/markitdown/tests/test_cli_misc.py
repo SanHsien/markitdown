@@ -10,7 +10,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from markitdown import __version__
-from markitdown.__main__ import main
+from markitdown import DocumentConverterResult
+from markitdown.__main__ import _handle_output, main
 from markitdown.converters._cu_converter import ContentUnderstandingFileType
 
 # CLI behavior
@@ -386,6 +387,7 @@ class TestEndpointEnvVars:
         monkeypatch.setattr(sys, "argv", argv)
 
         with patch("markitdown.__main__.MarkItDown") as mock_markitdown:
+            mock_markitdown.return_value.convert.return_value.markdown = "ok"
             main()
 
         assert mock_markitdown.call_args.kwargs[kwarg] == "https://from-env"
@@ -408,6 +410,7 @@ class TestEndpointEnvVars:
         )
 
         with patch("markitdown.__main__.MarkItDown") as mock_markitdown:
+            mock_markitdown.return_value.convert.return_value.markdown = "ok"
             main()
 
         assert mock_markitdown.call_args.kwargs["cu_endpoint"] == "https://from-flag"
@@ -423,6 +426,52 @@ class TestEndpointEnvVars:
             main()
 
         assert "MARKITDOWN_CU_ENDPOINT" in capsys.readouterr().out
+
+
+# Output encoding (ported from upstream PR 2803, design only)
+
+
+@pytest.mark.parametrize("stdio_encoding", ["cp950", "cp1252", "ascii"])
+def test_redirected_stdout_preserves_unicode(tmp_path, stdio_encoding):
+    text = "It’s “quote” 台北 café."
+    source = tmp_path / "unicode.txt"
+    source.write_text(text, encoding="utf-8")
+    environment = dict(os.environ, PYTHONIOENCODING=stdio_encoding)
+
+    result = subprocess.run(
+        [sys.executable, "-m", "markitdown", str(source), "-c", "utf-8"],
+        capture_output=True,
+        env=environment,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr.decode("ascii", errors="replace")
+    assert result.stdout.decode("utf-8").strip() == text
+
+
+def test_interactive_stdout_uses_the_terminal_encoding(monkeypatch):
+    buffer = io.BytesIO()
+    stdout = io.TextIOWrapper(buffer, encoding="cp1252")
+    monkeypatch.setattr(stdout, "isatty", lambda: True)
+    monkeypatch.setattr(sys, "stdout", stdout)
+
+    _handle_output(
+        SimpleNamespace(output=None), DocumentConverterResult(markdown="“台北”")
+    )
+    stdout.flush()
+
+    assert buffer.getvalue().decode("cp1252").strip() == "“??”"
+
+
+def test_text_only_stdout_preserves_unicode(monkeypatch):
+    stdout = io.StringIO()
+    monkeypatch.setattr(sys, "stdout", stdout)
+
+    _handle_output(
+        SimpleNamespace(output=None), DocumentConverterResult(markdown="“台北”")
+    )
+
+    assert stdout.getvalue() == "“台北”\n"
 
 
 if __name__ == "__main__":

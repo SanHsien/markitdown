@@ -312,9 +312,17 @@ def _handle_output(args, result: DocumentConverterResult):
     if args.output:
         with open(args.output, "w", encoding="utf-8") as f:
             f.write(result.markdown)
+    elif (
+        buffer := getattr(sys.stdout, "buffer", None)
+    ) is not None and not sys.stdout.isatty():
+        # Redirected or piped output is written as UTF-8, the same as `-o`,
+        # instead of being degraded to "?" by a legacy code page (cp950, cp1252).
+        sys.stdout.flush()
+        buffer.write((result.markdown + "\n").encode("utf-8"))
+        buffer.flush()
     else:
         # Handle stdout encoding errors more gracefully, with fallback for
-        # cases where sys.stdout.encoding is None (e.g. redirected streams).
+        # cases where sys.stdout.encoding is None (e.g. text-only streams).
         encoding = sys.stdout.encoding or "utf-8"
         print(result.markdown.encode(encoding, errors="replace").decode(encoding))
 

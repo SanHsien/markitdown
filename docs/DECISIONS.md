@@ -185,3 +185,37 @@ Commit 軸無新增（上游 `main` 仍是 `7482c09`），issue 軸無新增（�
 五筆各只動 1 個 converter 加 1 個測試檔，上游合併後 cherry-pick 的成本是一個 commit；這與 2026-10-25 例外移植的四筆（charset、BOM、NUL、副檔名大小寫）的差別是：那四筆是 Windows 工具與繁中文字直接會碰到的輸出，這五筆不是。
 
 水位：PR `#2775`→`#2780`；Issue 不變（`#2762`）；Commit 不變（`7482c09`）。
+
+## 2026-11-02（第四次審查）：上游 PR #2782–#2810、issue #2781–#2806
+
+Commit 軸無新增（上游 `main` 仍是 `7482c09`）。新增 17 筆 PR（全部 OPEN、未合併）與 12 筆 issue。審查方式：`gh pr diff` 取**目前**的 head（下表 head 欄），對新增行掃 `\S\s{40,}\S` 空白夾內容、`eval(`／`new Function`／`globalThis`、100 字元以上的 base64／hex 串、零寬與雙向控制字元、控制碼：17 筆命中 0（#2803、#2809 各有超過 200 字元的行，內容是 CLI help 字串與 SKILL.md front matter description，非隱藏程式）。
+
+### 採用 1 筆（Windows／CJK 例外類別，移植做法不是 diff）
+
+- **#2803**（head `c03c939`，+424／-292，5 檔；修 issue #1219）：`markitdown input.docx > out.md` 在 stdout 為 cp950／cp1252／ascii 時，目前的 `_handle_output` 以 `errors="replace"` 把無法編碼的字元換成 `?`（本 fork `__main__.py` 的 else 分支，`encoding = sys.stdout.encoding or "utf-8"`），繁中文字直接變 `?`，而 `-o` 路徑本來就寫 UTF-8，兩條路徑不一致。缺陷在本 fork 重現（還原修正後 `test_redirected_stdout_preserves_unicode` 失敗，見下）。**只移植設計**：stdout 有 `buffer` 且非 tty 時，flush 後以 UTF-8 寫入 `buffer`；互動終端與純文字串流維持原行為。**沒照抄**：上游同一個 PR 把 CLI 參數宣告與驗證拆成 `_cli_args.py`／`_cli_options.py` 兩個私有模組（約 700 行搬移），與本缺陷無關，且會讓之後 cherry-pick 上游 `__main__.py` 的修正全部衝突，所以不搬。測試移植 4 個（cp950／cp1252／ascii 重導向、互動終端沿用終端編碼、純文字串流）；cp950 為本 fork 加的案例（繁中 Windows 的實際碼頁）。與 2026-10-25 採用的 #1656（`sys.stdout.encoding` 為 None）同一函式、互補。觸發條件：上游合併 #2803 或以不同做法修 #1219 時，以上游版本為準重新對齊，衝突時採上游。
+
+### 不採用（維持「OPEN 的上游 PR 不 fork-ahead」政策；非 Windows／CJK 專屬）
+
+| PR（head） | 內容與本 fork 對應位置 | 結論與觸發條件 |
+| --- | --- | --- |
+| #2782（`aa1b0da`，+25／-2）、issue #2781 | 無 entry 的合法 Atom feed 被拒；`_rss_converter.py:136` 仍要求至少一個 `<entry>`。 | 與 2026-10-28 記錄的 #2780 同題（同一個 `RssConverter` 辨識條件），等上游擇一合併。 |
+| #2783（`99dd030`，+12，README） | 只加 shell 函式範例到上游英文 README。 | 文件，不適用。 |
+| #2785（`be177df`，+4／-4） | `actions/setup-python` 7.0.0 → 7.1.0，改 `pre-commit.yml`、`tests.yml`。 | 這兩個 workflow 在本 fork 只對 `microsoft/markitdown` 執行；本 fork 以 SHA 釘版（`.github/workflows/*.yml` 現為 v7.0.0 的 `5fda3b9`），升級走本 fork 自己的 Dependabot。不適用。 |
+| #2787（`f9da749`，+27／-11） | PDF 文字閱讀順序 fallback；`_pdf_converter.py:562-584` 的 `extract_text` 路徑。 | 一般產品修正，非 CJK 專屬。等上游合併。 |
+| #2788（`95966dd`，+92／-4） | CSV 內字面 HTML／字元參照被轉換。 | 一般修正，等上游合併。 |
+| #2794（`34b28fc`，+294／-7） | 音訊轉譯的 ffmpeg 解碼加 timeout 與 protocol whitelist，並附三個 stub ffmpeg 可執行檔。 | 本 fork 的 `_transcribe_audio.py` 沒有 ffmpeg 呼叫（`:19` 只是 warnings 過濾），攻擊面依賴 pydub 內部。測試靠 POSIX stub 可執行檔，Windows 原生跑不了。等上游合併。 |
+| #2795（`1348426`，+94／-9）、#2807（`1511970`，+41／-3，issue #2806） | DOCX 數學：單一方程式失敗隔離、未知 limit 函式 fallback；`degHide` 被忽略（`omml.py:307` `do_rad` 不讀 `degHide`）。 | 與 2026-10-25 已記錄的 OMML 同題 PR（#2757 等）屬同一檔案同一區域，等上游一起定案。 |
+| #2796（`fd4e545`，+95／-3） | ragged PDF 表格、HTML link/image title 內換行、非正頁寬。 | 一般修正，等上游合併。 |
+| #2797（`b2be1d2`，+421／-5） | ZipConverter 資源上限、ExifTool timeout、HTTP 抓取 timeout 與大小上限。 | 安全硬化、牽動 `_markitdown.py` 抓取行為，屬產品取捨，與 #2621／#2622 同類。觸發條件：上游合併，或本 fork 對外提供 MCP HTTP 服務時。 |
+| #2801（`a452bcb`，+66／-2） | 新功能：可省略試算表 sheet 標題（`_xlsx_converter.py:152` 目前固定輸出 `## sheet`）。 | 新功能，等上游決定。 |
+| #2802（`2de105b`，+34） | 新增 conda 打包 workflow。 | 本 fork 為純 Windows 維護線且不發佈套件，不適用。 |
+| #2805（`98945e6`，+75／-10）、#2810（`aaf26e7`，+162／-4）、issue #2804 | ipynb 的 `accepts()` 只檢查 `nbformat` 與 `nbformat_minor` 子字串（`_ipynb_converter.py:38-39`），一般 JSON 提到這兩個字會被吞成空 Markdown。 | 缺陷存在，但兩筆同題（等上游擇一合併），且與 #2763／#2768／#2777／#2778 同為 ipynb 辨識區域。非 Windows／CJK 專屬。 |
+| #2808（`de8d7bb`，+112） | HTML／DOCX 表格儲存格內的 `\|` 跳脫（`_markdownify.py` 無表格儲存格跳脫）。 | 一般修正，等上游合併。 |
+| #2809（`ed51314`，+56） | 新增 `skills/` 目錄（CLI 與 desktop 兩份 SKILL.md 及 md.sh）。 | 新增上游產品內容，等上游決定；md.sh 為 POSIX shell，Windows 原生不可用。 |
+
+### issue 軸
+
+- #2781、#2804、#2806：各對應上表 PR（#2782、#2805／#2810、#2807），隨上游合併抵達。
+- 無內容或垃圾（無重現步驟、只有附檔或與本專案無關）：#2784、#2786、#2790、#2791、#2792、#2793、#2798、#2799、#2800。
+
+水位：PR `#2780`→`#2810`；Issue `#2762`→`#2806`；Commit 不變（`7482c09`）。
