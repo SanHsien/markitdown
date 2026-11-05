@@ -219,3 +219,11 @@ Commit 軸無新增（上游 `main` 仍是 `7482c09`）。新增 17 筆 PR（全
 - 無內容或垃圾（無重現步驟、只有附檔或與本專案無關）：#2784、#2786、#2790、#2791、#2792、#2793、#2798、#2799、#2800。
 
 水位：PR `#2780`→`#2810`；Issue `#2762`→`#2806`；Commit 不變（`7482c09`）。
+
+## 2026-11-05：Ruff 新鮮度採版本限定延後，保留相容下限
+
+**決定**：將 `.github/dependency-deferrals.json` 的 Ruff `deferredLatest` 由 `0.17.2` 更新為 `0.17.3`（出口 c），保留 `requirements-dev.txt` 的 `ruff>=0.16`。
+
+**理由**：本 repo 宣告相容範圍而非精確釘版，0.17.3 已在範圍內，沒有必須提高下限的相容性需求。[官方發行說明](https://github.com/astral-sh/ruff/releases/tag/0.17.3) 的變更包含預覽規則、UP032 修正、效能及文件調整，未要求更動本 repo 的 E9+F gate；PyPI metadata 的 Python 下限為 3.7，涵蓋本 repo 的 3.10–3.14。使用本機 Ruff 0.17.3、pytest 9.2.0 與 Python 3.14 執行完整 Windows 維護 gate；本次只更新審視版本，不變更產品依賴或 workflow。沙箱無法存取共用 pytest 暫存目錄，先建立 worktree 內的 `.pytest_cache`，再以 `$env:PYTEST_ADDOPTS="--basetemp=.pytest_cache/freshness-20261105"` 執行 `pwsh -NoProfile -File tools/dev_check.ps1`，42 項測試通過。
+
+**重評條件與限制**：PyPI 出現高於 0.17.3 的版本時自動恢復提醒。其餘既有 freshness-hold 維持原裁決；本機 gate 不代表多版本 CI 或遠端 workflow 已轉綠，workflow 另檢查開放中的 Dependabot PR。
