@@ -227,3 +227,11 @@ Commit 軸無新增（上游 `main` 仍是 `7482c09`）。新增 17 筆 PR（全
 **理由**：本 repo 宣告相容範圍而非精確釘版，0.17.3 已在範圍內，沒有必須提高下限的相容性需求。[官方發行說明](https://github.com/astral-sh/ruff/releases/tag/0.17.3) 的變更包含預覽規則、UP032 修正、效能及文件調整，未要求更動本 repo 的 E9+F gate；PyPI metadata 的 Python 下限為 3.7，涵蓋本 repo 的 3.10–3.14。使用本機 Ruff 0.17.3、pytest 9.2.0 與 Python 3.14 執行完整 Windows 維護 gate；本次只更新審視版本，不變更產品依賴或 workflow。沙箱無法存取共用 pytest 暫存目錄，先建立 worktree 內的 `.pytest_cache`，再以 `$env:PYTEST_ADDOPTS="--basetemp=.pytest_cache/freshness-20261105"` 執行 `pwsh -NoProfile -File tools/dev_check.ps1`，42 項測試通過。
 
 **重評條件與限制**：PyPI 出現高於 0.17.3 的版本時自動恢復提醒。其餘既有 freshness-hold 維持原裁決；本機 gate 不代表多版本 CI 或遠端 workflow 已轉綠，workflow 另檢查開放中的 Dependabot PR。
+
+## 2026-11-07：Ruff 0.17.4 發行重審，維持版本限定延後與相容下限
+
+**決定**：將 `.github/dependency-deferrals.json` 的 Ruff `deferredLatest` 由 `0.17.3` 更新為 `0.17.4`，保留 `requirements-dev.txt` 的 `ruff>=0.16`。
+
+**理由**：本 repo 宣告相容範圍而非精確釘版，0.17.4 已在範圍內，沒有必須提高下限的相容性需求。[官方發行說明](https://github.com/astral-sh/ruff/releases/tag/0.17.4)（2026-11-05 發布）包含預覽功能（`flake8-logging-format` G004 修正、`tarfile-ignore-zeros-true`）、錯誤修正（分號前的 bare raise、分號後的 match 標識符、BOM 開頭檔案的診斷渲染器 panic、SIM102）、診斷修正 diff 顯示更多不可列印字元、效能調整（含 pyflakes F601/F602）、`__debug__` 屬性寫入的語法錯誤檢查及文件更新，未引入破壞性變更，亦未要求更動本 repo 的 E9+F gate；PyPI metadata 的 Python 下限為 3.7，涵蓋本 repo 的 3.10–3.14。使用本機 Ruff 0.17.3、pytest 9.2.0 執行完整 Windows 維護 gate（`pwsh -NoProfile -File tools/dev_check.ps1`），42 項測試通過，`check_dependency_freshness.py --strict` exit 0；另以 `uvx ruff@0.17.4 check --select E9,F --target-version py310 tools` 實跑 Ruff 0.17.4，結果 All checks passed。另將 `.github/dependency-deferrals.json` 加入 workflow 的 push paths，使 deferral 更新後重跑檢查。
+
+**重評條件與限制**：PyPI 出現高於 0.17.4 的版本時自動恢復提醒。其餘既有 freshness-hold 維持原裁決。

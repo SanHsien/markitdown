@@ -27,6 +27,6 @@
 | 為歷史無共同祖先強推，或發佈 fork PyPI 套件 | 歷史形態已知；發佈邊界見 AGENTS.md、FORK.md | 維護者另行授權政策變更 |
 
 ## 維護方式
-2026-11-05 已審視 Ruff 0.17.3，以版本限定 deferral 保留 `>=0.16` 相容下限；裁決與重評條件見 [維護決策](docs/DECISIONS.md)。
+2026-11-07 已審視 Ruff 0.17.4，以版本限定 deferral 保留 `>=0.16` 相容下限；裁決與重評條件見 [維護決策](docs/DECISIONS.md)。
 每週依 [上游流程](docs/UPSTREAM.md) 與 `tools/upstream_baseline.json` 逐筆審查；水位代表已審，不代表全部採用，No common ancestor 以既有 patch 審查方式處理。
 每月依賴新鮮度、遇安全公告即重查；維護變更跑 `pwsh -NoProfile -File tools/dev_check.ps1`，產品改動再按 [開發指引](docs/DEVELOPMENT.md) 跑 Windows 產品測試，不提高下限消音。
