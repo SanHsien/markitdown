@@ -15,7 +15,7 @@ olefile>=0.46  # freshness-hold: upstream compatibility floor
 
 # 音訊轉譯與 YouTube
 pydub>=0.25.1  # freshness-hold: upstream compatibility floor
-SpeechRecognition>=3.10.0  # freshness-hold: upstream compatibility floor
+SpeechRecognition>=3.10.4  # freshness-hold: upstream compatibility floor
 youtube-transcript-api>=1.0.0  # freshness-hold: Python 3.14 requires >=1.2.3; upstream 1.0.x is locked to <3.14
 
 # 雲端 Azure AI Document Intelligence & Content Understanding

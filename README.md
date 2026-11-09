@@ -17,7 +17,7 @@
 本專案 fork 自微軟開源的 [`microsoft/markitdown`](https://github.com/microsoft/markitdown)，沿用 MIT License。主要定位為 **Windows 專屬維護型 fork**（所有非 Windows 平台設定與 CI 已全數移除），提供純 Windows 11 + PowerShell 開發環境驗收門禁、繁體中文入口文件與上游變更追蹤。上游原版英文說明請見 [`README.en.md`](README.en.md)，fork 維護取捨與差異清單見 [`FORK.md`](FORK.md)。
 
 > [!IMPORTANT]
-> MarkItDown 會以目前行程（process）的權限執行 I/O 操作。如同 `open()` 或 `requests.get()`，它會存取該行程有權限存取的本機資源或網路位址。在處理不受信任的輸入時，請務必先做好過濾與清理，並依需求呼叫範圍最小的轉換函式（例如 `convert_stream()` 或 `convert_local()`）。
+> MarkItDown 會以目前行程（process）的權限執行 I/O 操作。如同 `open()` 或 `requests.get()`，它會存取該行程有權限存取的本機資源或網路位址。在處理不受信任的輸入時，請務必先做好過濾與清理，並依需求呼叫範圍最小的轉換函式（例如 `convert_stream()` 或 `convert_local()`）。此外，圖片說明生成、語音轉文字、Azure Document Intelligence 與 Azure Content Understanding 依賴網路託管服務；若需純本機運作，僅安裝所需的選配依賴即可。
 
 ---
 
@@ -37,7 +37,7 @@ MarkItDown 是一套輕量級的 Python 工具庫與命令列工具，專門用�
 - **PowerPoint**（`.pptx`）
 - **Word**（`.docx`）
 - **Excel**（`.xlsx`, `.xls`）
-- **圖片**（EXIF 詮釋資料抽取與 OCR）
+- **圖片**（EXIF 詮釋資料抽取與說明生成）
 - **音訊**（EXIF 詮釋資料與語音轉文字）
 - **HTML 網頁**
 - **純文字與結構化資料**（CSV、JSON、XML）
@@ -45,6 +45,8 @@ MarkItDown 是一套輕量級的 Python 工具庫與命令列工具，專門用�
 - **YouTube 網址**（字幕抓取與轉換）
 - **EPUB 電子書**
 - **Bing 搜尋結果** 與 **Azure Document Intelligence** 整合
+
+> 註：圖片說明生成與語音轉文字依賴網路託管服務。
 
 ---
 

@@ -235,3 +235,57 @@ Commit 軸無新增（上游 `main` 仍是 `7482c09`）。新增 17 筆 PR（全
 **理由**：本 repo 宣告相容範圍而非精確釘版，0.17.4 已在範圍內，沒有必須提高下限的相容性需求。[官方發行說明](https://github.com/astral-sh/ruff/releases/tag/0.17.4)（2026-11-05 發布）包含預覽功能（`flake8-logging-format` G004 修正、`tarfile-ignore-zeros-true`）、錯誤修正（分號前的 bare raise、分號後的 match 標識符、BOM 開頭檔案的診斷渲染器 panic、SIM102）、診斷修正 diff 顯示更多不可列印字元、效能調整（含 pyflakes F601/F602）、`__debug__` 屬性寫入的語法錯誤檢查及文件更新，未引入破壞性變更，亦未要求更動本 repo 的 E9+F gate；PyPI metadata 的 Python 下限為 3.7，涵蓋本 repo 的 3.10–3.14。使用本機 Ruff 0.17.3、pytest 9.2.0 執行完整 Windows 維護 gate（`pwsh -NoProfile -File tools/dev_check.ps1`），42 項測試通過，`check_dependency_freshness.py --strict` exit 0；另以 `uvx ruff@0.17.4 check --select E9,F --target-version py310 tools` 實跑 Ruff 0.17.4，結果 All checks passed。另將 `.github/dependency-deferrals.json` 加入 workflow 的 push paths，使 deferral 更新後重跑檢查。
 
 **重評條件與限制**：PyPI 出現高於 0.17.4 的版本時自動恢復提醒。其餘既有 freshness-hold 維持原裁決。
+
+## 2026-11-09（第五次審查）：上游 commit ed17895、PR #2811–#2852、issue #2807–#2850
+
+上游 `main` 自 `7482c09` 推進至 `ed178952a6672abdfd35b5f9e76a80b6cefc086e`（短 SHA `ed17895`，共 3 筆 commit）。新增 31 筆 PR（3 筆 MERGED、3 筆 CLOSED、25 筆 OPEN）與 9 筆 issue。
+
+### commit 軸（3 筆，全部採用）
+
+- **ed17895**（2026-11-07，+55／-1，2 檔，PR #2837）：`fix: match ExifTool directories case-insensitively on Windows`。Windows 原生環境下 `shutil.which` 保留 PATH 拼法（如 `C:\WINDOWS\system32`），與受信任目錄列表（`C:\Windows\System32`）直接比對字串會失敗，導致自動偵測 ExifTool 靜默遺失。採用 `os.path.normcase` 統一大小寫比對；POSIX 系統維持精確大小寫。一併採用上游自帶測試。
+- **3ae4f03**（2026-11-06，+33／-3，3 檔，PR #2846）：`Override default SpeechRecognition endpoint (#2846)`。在 `_transcribe_audio.py` 呼叫 `recognize_google` 時明確指定 `endpoint="https://www.google.com/speech-api/v2/recognize"`，避免明文 HTTP 傳輸，並在 `pyproject.toml` 將 `SpeechRecognition` 相容下限升至 `>=3.10.4`。本 fork 同步採用並更新 `requirements-all.txt` 宣告。
+- **1dccd83**（2026-11-06，+5／-1，1 檔，PR #2845）：`Clarify hosted service requirements in README (#2845)`。說明圖片說明生成與語音轉文字依賴網路託管服務，並於安全注意事項加註純本機運作指引。已將英文變更併入 `README.en.md` 並翻譯至繁中 `README.md`。
+
+### PR 軸（31 筆，#2811 至 #2852）
+
+審查方式：25 筆 OPEN 逐筆以 `gh pr diff <n> -R microsoft/markitdown` 取**目前**的 head 讀 diff（head 見下），讀前讀後各以 `gh pr view --json headRefOid` 確認 head 沒變（25 筆皆未變）；對新增行、commit 訊息、PR 本文與留言掃零寬／雙向控制字元、`\S\s{40,}\S` 空白夾內容、`eval(`／`new Function`／`globalThis`／`exec(`、100 字元以上的 base64、100 個十六進位字元以上的 hex 串、控制碼與 HTML 註解。新增行命中 0（零寬、雙向、控制碼、空白夾內容、base64、hex、`eval` 類皆 0）；另有三類字面命中，逐一讀過皆非隱藏內容：#2828 有 4 行超過 200 字元（1 行是重生成 `test_docx.md` 的 `python -c` 指令，3 行是測試文件 `test_docx.md` 的 AutoGen 論文摘要文字）；#2818 與 #2843 的新增行含 `<!-- Slide number -->`／`<!-- Hidden slide -->`，是 PPTX 轉換器輸出的標記與其測試斷言。本文與留言只有 #2813、#2822、#2826、#2827、#2828 上 CLA 機器人的 `<!-- Policy app identification ... -->` 標記，其餘無任何藏起來的內容。25 筆都不屬 Windows／CJK 例外類別：#2811／#2813 的 ipynb 驗證順帶去掉 BOM，但主題是頂層 JSON 結構驗證；#2830 的測試含 `café` 與 `中文`，主題是 User-Agent 與傳輸驗證；其餘與 Windows 路徑、碼頁、繁中輸出無關，所以沒有改判。25 筆目前 head：#2811 `6b8f579`、#2812 `05ca764`、#2813 `b128da5`、#2814 `fdef206`、#2818 `2a2b936`、#2821 `52b92e9`、#2822 `ba377c6`、#2823 `003cc2e`、#2824 `9687008`、#2825 `063bc10`、#2826 `b580312`、#2827 `e03b867`、#2828 `7bfc72a`、#2830 `dfdaf85`、#2831 `e7e233b`、#2832 `259c58e`、#2833 `538c2ee`、#2835 `13bfb37`、#2836 `b98a87d`、#2840 `ff7340f`、#2843 `7104ac6`、#2844 `86991af`、#2849 `1485223`、#2851 `6c2d71b`、#2852 `7f657d7`。各筆新增／刪除行數與檔數以 `gh pr list --json additions,deletions,changedFiles` 核對，與下列條目一致。
+
+- **MERGED 3 筆**：即上述 commit（#2837、#2845、#2846），全部採用。
+- **CLOSED 未合併 3 筆**：#2838（PDF OCR 數學公式 prompt；+78／-15，4 檔），關閉未合併、無說明。不採用。、#2847（ipynb 結構驗證重送，關閉）、#2848（表格 pipe 跳脫重送，關閉）。均不採用。
+- **OPEN 未合併 25 筆**：維持「OPEN 的上游 PR 不 fork-ahead」政策，等上游合併後隨 commit 抵達：
+  - #2811（+94／-4，2 檔）、#2813（+109／-4，2 檔）：ipynb 頂層 JSON 結構驗證（修 issue #2804），同題競合，等上游擇一合併。
+  - #2812（+172／-1，3 檔）：外掛轉換器 CLI 選項，等上游決定。
+  - #2814（+94／-2，2 檔）：DOCX OMML radical `degHide`（修 issue #2806），等上游合併。
+  - #2818（+47／-0，2 檔）：PPTX 隱藏投影片標記（修 issue #2817），等上游合併。
+  - #2821（+35／-1，2 檔）、#2830（+140／-1，3 檔）：HTTP 請求自訂 User-Agent 與傳輸驗證（修 issue #2820），等上游決定。
+  - #2822（+2／-2，2 檔）：actions/checkout 5 升 6，本 fork CI 獨立維護且以 SHA 釘版，不適用。
+  - #2823（+52／-0，3 檔）：HTML 表格儲存格內 pipe 跳脫，等上游合併。
+  - #2824（+82／-4，2 檔）：XLSX/XLS 空白儲存格與 NA 類文字保留，等上游合併。
+  - #2825（+112／-1，2 檔）：DOCX OMML n-ary 隱藏極限，等上游合併。
+  - #2826（+138／-60，3 檔）：移除 ImageConverter 重複之 LLM caption helper，等上游合併。
+  - #2827（+93／-2，2 檔）：略過 PdfConverter 重複之 pdfminer 解析，等上游合併。
+  - #2828（+117／-0，3 檔）：新增 test.docx 期望輸出測試，等上游合併。
+  - #2831（+2／-5，1 檔）：markitdown-ocr README 移除無效之 CLI 範例，等上游合併。
+  - #2832（+139／-1，2 檔）：DOCX 保留腳註連結與格式化定義，等上游合併。
+  - #2833（+72／-0，2 檔）：HTML template 元素 inert 隱藏可見度，等上游合併。
+  - #2835（+4／-0，1 檔）、#2851（+86／-0，2 檔）：DOCX 無方程式時略過 math XML 往返預處理（修 issue #2834），同題競合，等上游擇一合併。
+  - #2836（+112／-8，2 檔）：DOCX 依 package relationships 解析主文件 part，等上游合併。
+  - #2840（+116／-23，2 檔）：PPTX 複合圖表保留多 plot 類別資料（修 issue #2839），等上游合併。
+  - #2843（+261／-4，2 檔）：PowerPoint 文字保留超連結目標，等上游合併。
+  - #2844（+11／-4，5 檔）：Python 3.15 支援（Draft），觸發條件：上游 CI 正式納入後本 fork 同步更新矩陣。
+  - #2849（+146／-10，2 檔）：限制 ZIP 解壓縮大小、項目數與巢狀深度，屬產品安全取捨，等上游決定。
+  - #2852（+15／-3，2 檔）：XLSX 修復具前綴 sheet views 之 legacy attributes，等上游合併。
+
+### issue 軸（9 筆，#2807 至 #2850）
+
+- #2817（PPTX 隱藏投影片轉換）：對應 PR #2818，等上游合併。
+- #2819（تحويل PDF）：無內容或非本專案問題（阿拉伯文標題、無內文）。不適用。
+- #2820（URL fetch 缺少 User-Agent 導致 Wikipedia 403）：對應 PR #2821 / #2830，等上游合併。
+- #2829（nefro）：無內容或垃圾。不適用。
+- #2834（DOCX math 預處理無方程式仍重複解析）：對應 PR #2835 / #2851，等上游合併。
+- #2839（PPTX 複合圖表遺漏後續 plot 資料）：對應 PR #2840，等上游合併。
+- #2841（trabajo unidad 4）：無內容或作業。不適用。
+- #2842（unidad 4）：無內容或作業。不適用。
+- #2850（jurnal tugas akhir bab 1 2 3）：學生論文上傳，已關閉。不適用。
+
+水位：PR `#2810`→`#2852`；Issue `#2806`→`#2850`；Commit `7482c09`→`ed17895`（完整 SHA：`ed178952a6672abdfd35b5f9e76a80b6cefc086e`）。
