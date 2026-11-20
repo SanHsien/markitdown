@@ -226,7 +226,18 @@ def _pre_process_styles(content: bytes) -> bytes:
 
     namespace = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
     parser = etree.XMLParser(resolve_entities=False, no_network=True)
-    root = etree.fromstring(content, parser=parser)
+    try:
+        root = etree.fromstring(content, parser=parser)
+    except etree.XMLSyntaxError:
+        # The lenient strike pass used to repair stylesheets that are not
+        # well-formed; recover them the same way, with the same entity and
+        # network restrictions, so double strikethrough is still normalized.
+        parser = etree.XMLParser(
+            resolve_entities=False, no_network=True, recover=True
+        )
+        root = etree.fromstring(content, parser=parser)
+        if root is None:
+            return content
     changed = False
 
     for style in root.findall(namespace + "style"):

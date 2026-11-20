@@ -435,6 +435,47 @@ def test_style_strike_repair_preserves_namespaces(
     assert style.find(f"{W}rPr/{W}b") is not None
 
 
+_NOT_WELL_FORMED_STYLES = (
+    "{doctype}"
+    f'<w:styles xmlns:w="{WORD_NAMESPACE}">'
+    '<w:style w:type="character" w:styleId="DoubleStrike">'
+    '<w:name w:val="Double Strike"/><w:rPr><w:dstrike/></w:rPr>'
+    "</w:style><w:style w:type='paragraph' w:styleId='Loose'>"
+    "<w:name w:val='{name}'/><w:rPr><w:b></w:rPr></w:style></w:styles>"
+)
+
+
+def test_not_well_formed_styles_still_normalize_double_strike() -> None:
+    # The lenient strike pass used to repair such stylesheets; the strict style
+    # pass must not silently drop the normalization.
+    malformed = _NOT_WELL_FORMED_STYLES.format(doctype="", name="Loose").encode()
+    with pytest.raises(etree.XMLSyntaxError):
+        etree.fromstring(malformed)
+
+    root = etree.fromstring(_pre_process_styles(malformed))
+
+    assert root.find(".//" + W + "dstrike") is None
+    style = root.find(W + "style")
+    assert style is not None and style.get(W + "styleId") == "DoubleStrike"
+    assert style.find(f"{W}rPr/{W}strike") is not None
+
+
+def test_recovering_malformed_styles_does_not_expand_external_entities(
+    tmp_path,
+) -> None:
+    secret = tmp_path / "secret.txt"
+    secret.write_text("LEAKED_SECRET", encoding="utf-8")
+    malformed = _NOT_WELL_FORMED_STYLES.format(
+        doctype=f'<!DOCTYPE w:styles [<!ENTITY ext SYSTEM "{secret.as_uri()}">]>',
+        name="&ext;",
+    ).encode()
+
+    repaired = _pre_process_styles(malformed)
+
+    assert b"LEAKED_SECRET" not in repaired
+    assert b"strike" in repaired and b"dstrike" not in repaired
+
+
 def test_other_namespace_dstrike_is_unchanged(styles_xml: bytes) -> None:
     original = etree.fromstring(styles_xml)
     etree.SubElement(original, "{urn:extension}dstrike")
