@@ -87,6 +87,28 @@ def test_ci_covers_python_314() -> None:
     assert "ubuntu" not in workflow
 
 
+def test_product_tests_workflow_runs_product_suites_safely() -> None:
+    text = (ROOT / ".github" / "workflows" / "product-tests.yml").read_text(
+        encoding="utf-8"
+    )
+    # Must actually run here, so no upstream-only repository gate.
+    assert "github.repository ==" not in text
+    # Safe triggers and least-privilege token.
+    assert "pull_request_target" not in text
+    assert "contents: read" in text
+    assert "persist-credentials: false" in text
+    # Every third-party action is pinned to a full commit SHA.
+    uses = re.findall(r"^\s*(?:-\s*)?uses:\s*(\S+)", text, flags=re.MULTILINE)
+    assert uses
+    for ref in uses:
+        assert re.fullmatch(r"[\w./-]+@[0-9a-f]{40}", ref), ref
+    # All three product suites run, and the core suite runs on Windows too.
+    assert "hatch test" in text
+    assert "packages/markitdown-ocr" in text
+    assert "packages/markitdown-mcp" in text
+    assert "windows-latest" in text
+
+
 def test_product_ci_workflows_are_gated_to_upstream() -> None:
     for name in PRODUCT_CI_WORKFLOWS:
         text = (ROOT / ".github" / "workflows" / name).read_text(encoding="utf-8")

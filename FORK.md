@@ -25,7 +25,8 @@
 | `tools/bootstrap_dev.ps1` | Windows 本機一鍵初始化與驗收（支援 `-All` 參數安裝全套產品依賴） |
 | `tools/test_product.ps1` | Windows 原生產品測試執行腳本（支援多套件隔離與 `-AllPackages` 一鍵驗收） |
 | `requirements.txt` / `requirements-all.txt` | MarkItDown 核心、全套格式與 OCR/MCP/Plugin 擴充套件依賴清單 |
-| `.github/workflows/ci.yml` | 純 Windows 原生 CI (windows-latest Python 3.10–3.14 矩陣)：compile / ruff / 維護測試 / 連結檢查 |
+| `.github/workflows/ci.yml` | 維護 gate CI (windows-latest Python 3.10–3.14 矩陣)：compile / ruff / 維護測試 / 連結檢查；不跑產品測試 |
+| `.github/workflows/product-tests.yml` | 產品測試（對應上游 `tests.yml`，Python 3.10–3.13）：核心套件 ubuntu＋windows、OCR 與 MCP 在 ubuntu；`tests.yml` 在本 fork 不執行 |
 | `.github/workflows/upstream-check.yml` | 每週對 `upstream/main` 做未審查 commit、PR、issue 水位檢查 |
 | `.github/workflows/dependency-freshness.yml` | 每月依賴新鮮度檢查 |
 | 產品 CI workflow 閘門 | 上游 `tests.yml`、`pre-commit.yml` 加上 `if: github.repository == 'microsoft/markitdown'` 防護 |

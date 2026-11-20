@@ -1,0 +1,117 @@
+name: Product tests
+
+# Fork-owned mirror of the upstream tests.yml (which is gated to
+# microsoft/markitdown and never runs here). Runs the product test suites of
+# packages/markitdown, markitdown-ocr and markitdown-mcp. See docs/DECISIONS.md
+# (2026-11-21) for why this exists and why Ubuntu appears next to Windows.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: product-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Preserve Unicode in captured CLI output on Windows.
+  PYTHONUTF8: "1"
+
+jobs:
+  core:
+    name: core (${{ matrix.os }} / py${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # Same media tools the upstream workflow installs on Linux; without them
+      # the exiftool/ffmpeg-backed tests are skipped instead of run.
+      - name: Install media tools
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libimage-exiftool-perl ffmpeg
+          exiftool -ver
+          ffmpeg -version
+          ffprobe -version
+
+      - name: Install Hatch
+        run: pipx install hatch
+
+      - name: Run tests
+        working-directory: packages/markitdown
+        run: hatch test -py=${{ matrix.python-version }}
+
+  ocr:
+    name: ocr (ubuntu / py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # Install markitdown from the local checkout rather than PyPI, so the
+      # plugin is tested against the sibling package it ships alongside.
+      - name: Install packages
+        run: pip install ./packages/markitdown ./packages/markitdown-ocr pytest
+
+      - name: Run tests
+        working-directory: packages/markitdown-ocr
+        run: pytest
+
+  mcp:
+    name: mcp (ubuntu / py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install packages
+        run: pip install "./packages/markitdown[all]" ./packages/markitdown-mcp pytest
+
+      - name: Run tests
+        working-directory: packages/markitdown-mcp
+        run: pytest

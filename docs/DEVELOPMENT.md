@@ -61,7 +61,12 @@ pwsh -NoProfile -File tools\test_product.ps1 -AllPackages
 3. `pytest tools/tests`（使用獨立的 `tools/pytest.ini`）
 4. `python tools/check_links.py`（驗證所有維護文件相對連結）
 
-CI 專注於 Windows 原生環境，在 `windows-latest` 執行完整 Python 3.10–3.14 矩陣並跑過 gate。推至 `main` 前請務必在本機跑過 gate。
+CI 有兩個 workflow：
+
+- `ci.yml`：`windows-latest` 執行完整 Python 3.10–3.14 矩陣並跑這個維護 gate，不跑產品測試。
+- `product-tests.yml`：產品測試套件（對應上游 `tests.yml`，Python 3.10–3.13）。核心套件（`hatch test`）在 `ubuntu-latest` 與 `windows-latest` 各跑一輪；`markitdown-ocr`、`markitdown-mcp` 在 `ubuntu-latest`。上游的 `tests.yml` 在本 fork 不執行。
+
+推至 `main` 前請務必在本機跑過 gate；改到產品程式碼時再跑 `tools	est_product.ps1`。
 
 ## 依賴新鮮度
 

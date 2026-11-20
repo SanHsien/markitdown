@@ -291,6 +291,20 @@ Commit 軸無新增（上游 `main` 仍是 `7482c09`）。新增 17 筆 PR（全
 
 水位：PR `#2810`→`#2852`；Issue `#2806`→`#2850`；Commit `7482c09`→`ed17895`（完整 SHA：`ed178952a6672abdfd35b5f9e76a80b6cefc086e`）。
 
+## 2026-11-21：新增 fork 自有產品測試 workflow（`product-tests.yml`）
+
+**決定**：新增 `.github/workflows/product-tests.yml`，在本 fork 實際執行產品測試套件。`push`／`pull_request`（`main`）與手動觸發，權限 `contents: read`，不使用 `pull_request_target`，actions 以與 `ci.yml` 相同的 SHA 釘版。三個 job 對應上游 `tests.yml`，Python 同為 3.10–3.13：
+
+- `core`：`packages/markitdown`，`pipx install hatch` 後 `hatch test -py=<版本>`；`ubuntu-latest` 與 `windows-latest` 各跑一輪。Ubuntu 沿用上游 PR #2586 的 apt 步驟安裝 `exiftool`、`ffmpeg`，否則相關測試只會被跳過。
+- `ocr`：`markitdown-ocr`，從本機 checkout 安裝核心與外掛後跑 `pytest`（ubuntu）。
+- `mcp`：`markitdown-mcp`，安裝 `markitdown[all]` 與 MCP 後跑 `pytest`（ubuntu）。
+
+**理由**：`tests.yml` 有 `github.repository == 'microsoft/markitdown'` 閘門（2026-09-11 決定），`ci.yml` 只跑維護 gate（compile／ruff／`tools/tests`／連結檢查），所以在此之前產品測試從不在 fork 的 CI 跑，只能在本機跑受影響的檔案。不改 `tests.yml`（上游檔，改它會讓之後 cherry-pick 衝突）；也不把產品依賴塞進 `ci.yml`（維護 gate 刻意只裝 pytest 與 ruff）。
+
+**對「純 Windows」的修正**：2026-09-11 起「所有非 Windows CI 已移除」。本次只在 `product-tests.yml` 加 Ubuntu 作為較快、較便宜的第二訊號；Windows 仍是維護者的主要環境，`core` 在 Windows 跑完整 3.10–3.13。`ci.yml` 維持純 Windows（`test_ci_covers_python_314` 仍斷言它不含 `ubuntu`）。OCR 與 MCP 只跑 Ubuntu，與上游 `tests.yml` 的 Windows 設定不同，Windows 上的這兩個套件仍靠本機 `tools	est_product.ps1 -AllPackages` 驗收。
+
+**限制**：Python 3.14 不在本 workflow 內（上游 `tests.yml` 也沒有），3.14 只有維護 gate。產品測試紅燈要先分辨是否本次改動造成，不能用跳過測試消音。
+
 ## 2026-11-21：增量審查（`aa9b84c..c8377f4`）修正
 
 ### CLI 重導向輸出編碼改依消費端選擇（F-2；F-3 未驗證）
