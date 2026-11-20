@@ -6,7 +6,7 @@ import os
 import sys
 import codecs
 import io
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from textwrap import dedent
 from importlib.metadata import entry_points
 from .__about__ import __version__
@@ -315,16 +315,61 @@ def _handle_output(args, result: DocumentConverterResult):
     elif (
         buffer := getattr(sys.stdout, "buffer", None)
     ) is not None and not sys.stdout.isatty():
-        # Redirected or piped output is written as UTF-8, the same as `-o`,
-        # instead of being degraded to "?" by a legacy code page (cp950, cp1252).
+        encoding = _redirected_stdout_encoding(sys.stdout)
         sys.stdout.flush()
-        buffer.write((result.markdown + "\n").encode("utf-8"))
+        buffer.write((result.markdown + "\n").encode(encoding, errors="replace"))
         buffer.flush()
     else:
         # Handle stdout encoding errors more gracefully, with fallback for
         # cases where sys.stdout.encoding is None (e.g. text-only streams).
         encoding = sys.stdout.encoding or "utf-8"
         print(result.markdown.encode(encoding, errors="replace").decode(encoding))
+
+
+_FILE_TYPE_PIPE = 3  # GetFileType() result for anonymous and named pipes
+
+
+def _windows_pipe_console_code_page(stdout) -> Optional[int]:
+    """Return the console output code page when Windows stdout is a pipe.
+
+    PowerShell decodes a native command's piped or captured output with
+    [Console]::OutputEncoding, which is the console output code page. Return
+    None for files, character devices, or when no console is attached.
+    """
+    try:
+        import ctypes
+        import msvcrt
+
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        handle = msvcrt.get_osfhandle(stdout.fileno())
+        if kernel32.GetFileType(handle) != _FILE_TYPE_PIPE:
+            return None
+        return kernel32.GetConsoleOutputCP() or None
+    except Exception:
+        return None
+
+
+def _redirected_stdout_encoding(stdout) -> str:
+    """Choose the byte encoding for redirected or piped (non-tty) stdout.
+
+    1. An explicit Python I/O encoding (PYTHONIOENCODING, or UTF-8 mode via
+       PYTHONUTF8 / -X utf8) is honored, as with any Python program.
+    2. On Windows, a pipe is usually read by a shell that decodes with the
+       console output code page (PowerShell `$x = ...`, `| Select-String`), so
+       use that code page; 65001 means UTF-8.
+    3. Otherwise (files, as with cmd.exe `>`; no console; other platforms) use
+       UTF-8, the same as `-o`.
+    """
+    if os.environ.get("PYTHONIOENCODING") or sys.flags.utf8_mode:
+        return getattr(stdout, "encoding", None) or "utf-8"
+    if sys.platform == "win32":
+        code_page = _windows_pipe_console_code_page(stdout)
+        if code_page is not None:
+            try:
+                return codecs.lookup(f"cp{code_page}").name
+            except LookupError:
+                pass
+    return "utf-8"
 
 
 def _exit_with_error(message: str):

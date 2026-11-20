@@ -119,6 +119,8 @@ markitdown path/to/document.docx -o output.md
 cat document.html | markitdown > output.md
 ```
 
+Windows 輸出編碼：`-o` 一律寫 UTF-8；cmd.exe 的 `>` 也寫 UTF-8。PowerShell 的擷取（`$x = markitdown f.docx`）、接 cmdlet（`| Select-String`）與 `>` 會用主控台輸出碼頁（繁中預設 950），碼頁外的字元變成 `?`。要在 PowerShell 得到 UTF-8 檔案，用 `-o`，或先設 `$env:PYTHONIOENCODING = "utf-8"`。
+
 ### Python API 使用
 
 ```python

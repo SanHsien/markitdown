@@ -11,6 +11,7 @@ import pytest
 
 from markitdown import __version__
 from markitdown import DocumentConverterResult
+import markitdown.__main__ as cli
 from markitdown.__main__ import _handle_output, main
 from markitdown.converters._cu_converter import ContentUnderstandingFileType
 
@@ -428,25 +429,124 @@ class TestEndpointEnvVars:
         assert "MARKITDOWN_CU_ENDPOINT" in capsys.readouterr().out
 
 
-# Output encoding (ported from upstream PR 2803, design only)
+# Output encoding (upstream PR 2803 design, adapted to the Windows consumer)
 
 
-@pytest.mark.parametrize("stdio_encoding", ["cp950", "cp1252", "ascii"])
-def test_redirected_stdout_preserves_unicode(tmp_path, stdio_encoding):
-    text = "It’s “quote” 台北 café."
+_TEXT = "It’s “quote” 台北 café."
+
+
+def _flags(utf8_mode: int) -> SimpleNamespace:
+    # Copy every flag so pytest internals that read sys.flags keep working.
+    names = [name for name in dir(sys.flags) if not name.startswith("_")]
+    values = {name: getattr(sys.flags, name) for name in names}
+    return SimpleNamespace(**dict(values, utf8_mode=utf8_mode))
+
+
+def _clean_environment(**extra: str) -> dict[str, str]:
+    environment = {
+        key: value
+        for key, value in os.environ.items()
+        if key not in ("PYTHONIOENCODING", "PYTHONUTF8")
+    }
+    environment.update(extra)
+    return environment
+
+
+@pytest.mark.parametrize("stdio_encoding", ["utf-8", "cp950", "cp1252", "ascii"])
+def test_explicit_pythonioencoding_is_honored_for_redirected_output(
+    tmp_path, stdio_encoding
+):
     source = tmp_path / "unicode.txt"
-    source.write_text(text, encoding="utf-8")
-    environment = dict(os.environ, PYTHONIOENCODING=stdio_encoding)
+    source.write_text(_TEXT, encoding="utf-8")
 
     result = subprocess.run(
         [sys.executable, "-m", "markitdown", str(source), "-c", "utf-8"],
         capture_output=True,
-        env=environment,
+        env=_clean_environment(PYTHONIOENCODING=stdio_encoding),
         check=False,
     )
 
     assert result.returncode == 0, result.stderr.decode("ascii", errors="replace")
-    assert result.stdout.decode("utf-8").strip() == text
+    assert result.stdout.strip() == _TEXT.encode(stdio_encoding, errors="replace")
+
+
+def test_stdout_redirected_to_a_file_is_utf8(tmp_path):
+    # cmd.exe `>` hands the process a disk file: write UTF-8, the same as `-o`,
+    # whatever the legacy code page is (upstream issue 1219).
+    source = tmp_path / "unicode.txt"
+    source.write_text(_TEXT, encoding="utf-8")
+    target = tmp_path / "out.md"
+
+    with open(target, "wb") as stdout:
+        result = subprocess.run(
+            [sys.executable, "-m", "markitdown", str(source), "-c", "utf-8"],
+            stdout=stdout,
+            stderr=subprocess.PIPE,
+            env=_clean_environment(),
+            check=False,
+        )
+
+    assert result.returncode == 0, result.stderr.decode("ascii", errors="replace")
+    assert target.read_bytes().decode("utf-8").strip() == _TEXT
+
+
+@pytest.mark.parametrize(
+    ("platform", "code_page", "expected"),
+    [
+        # PowerShell decodes piped/captured native output with the console code page.
+        ("win32", 950, "cp950"),
+        ("win32", 437, "cp437"),
+        ("win32", 65001, "utf-8"),
+        # Not a pipe, or no console attached: same as `-o`.
+        ("win32", None, "utf-8"),
+        # A code page Python has no codec for must not crash the output.
+        ("win32", 54936000, "utf-8"),
+        ("linux", 950, "utf-8"),
+    ],
+)
+def test_redirected_encoding_follows_the_consumer_without_explicit_override(
+    monkeypatch, platform, code_page, expected
+):
+    monkeypatch.delenv("PYTHONIOENCODING", raising=False)
+    monkeypatch.setattr(cli.sys, "flags", _flags(0))
+    monkeypatch.setattr(cli.sys, "platform", platform)
+    monkeypatch.setattr(
+        cli, "_windows_pipe_console_code_page", lambda stdout: code_page
+    )
+    stdout = SimpleNamespace(encoding="cp1252")
+
+    assert cli._redirected_stdout_encoding(stdout) == expected
+
+
+@pytest.mark.parametrize(
+    ("environment", "utf8_mode"), [({"PYTHONIOENCODING": "cp1252"}, 0), ({}, 1)]
+)
+def test_explicit_python_encoding_overrides_the_console_code_page(
+    monkeypatch, environment, utf8_mode
+):
+    monkeypatch.delenv("PYTHONIOENCODING", raising=False)
+    for key, value in environment.items():
+        monkeypatch.setenv(key, value)
+    monkeypatch.setattr(cli.sys, "flags", _flags(utf8_mode))
+    monkeypatch.setattr(cli.sys, "platform", "win32")
+    monkeypatch.setattr(cli, "_windows_pipe_console_code_page", lambda stdout: 950)
+    stdout = SimpleNamespace(encoding="cp1252" if environment else "utf-8")
+
+    assert cli._redirected_stdout_encoding(stdout) == stdout.encoding
+
+
+def test_piped_output_in_a_code_page_replaces_unencodable_text(monkeypatch):
+    buffer = io.BytesIO()
+    stdout = io.TextIOWrapper(buffer, encoding="utf-8")
+    monkeypatch.setattr(stdout, "isatty", lambda: False)
+    monkeypatch.setattr(sys, "stdout", stdout)
+    monkeypatch.setattr(cli, "_redirected_stdout_encoding", lambda stdout: "cp950")
+
+    _handle_output(
+        SimpleNamespace(output=None), DocumentConverterResult(markdown=_TEXT)
+    )
+
+    assert buffer.getvalue() == (_TEXT + "\n").encode("cp950", errors="replace")
 
 
 def test_interactive_stdout_uses_the_terminal_encoding(monkeypatch):

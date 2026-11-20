@@ -97,6 +97,8 @@ You can also pipe content:
 cat path-to-file.pdf | markitdown
 ```
 
+Windows output encoding (this fork): `-o` and cmd.exe `>` always write UTF-8. PowerShell capture (`$x = markitdown f.docx`), cmdlet pipelines (`| Select-String`) and `>` use the console output code page, and characters outside it become `?`. For a UTF-8 file in PowerShell, use `-o` or set `$env:PYTHONIOENCODING = "utf-8"` first.
+
 ### Optional Dependencies
 MarkItDown has optional dependencies for activating various file formats. Earlier in this document, we installed all optional dependencies with the `[all]` option. However, you can also install them individually for more control. For example:
 
