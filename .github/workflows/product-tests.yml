@@ -60,7 +60,10 @@ jobs:
 
       - name: Run tests
         working-directory: packages/markitdown
-        run: hatch test -py=${{ matrix.python-version }}
+        # Not `-py=<ver>`: PowerShell (the default Windows shell) splits an
+        # unquoted `-py=3.12` into `-py=3` and `.12`, and hatch then reports
+        # "No environments were selected".
+        run: hatch test --python ${{ matrix.python-version }}
 
   ocr:
     name: ocr (ubuntu / py${{ matrix.python-version }})

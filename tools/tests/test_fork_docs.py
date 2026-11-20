@@ -103,7 +103,10 @@ def test_product_tests_workflow_runs_product_suites_safely() -> None:
     for ref in uses:
         assert re.fullmatch(r"[\w./-]+@[0-9a-f]{40}", ref), ref
     # All three product suites run, and the core suite runs on Windows too.
-    assert "hatch test" in text
+    assert "hatch test --python " in text
+    # PowerShell splits an unquoted `-py=3.12` into `-py=3` + `.12` on Windows.
+    run_lines = [ln for ln in text.splitlines() if ln.strip().startswith("run:")]
+    assert not any("-py=" in ln for ln in run_lines)
     assert "packages/markitdown-ocr" in text
     assert "packages/markitdown-mcp" in text
     assert "windows-latest" in text

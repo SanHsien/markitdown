@@ -303,6 +303,8 @@ Commit 軸無新增（上游 `main` 仍是 `7482c09`）。新增 17 筆 PR（全
 
 **對「純 Windows」的修正**：2026-09-11 起「所有非 Windows CI 已移除」。本次只在 `product-tests.yml` 加 Ubuntu 作為較快、較便宜的第二訊號；Windows 仍是維護者的主要環境，`core` 在 Windows 跑完整 3.10–3.13。`ci.yml` 維持純 Windows（`test_ci_covers_python_314` 仍斷言它不含 `ubuntu`）。OCR 與 MCP 只跑 Ubuntu，與上游 `tests.yml` 的 Windows 設定不同，Windows 上的這兩個套件仍靠本機 `tools	est_product.ps1 -AllPackages` 驗收。
 
+**實測的坑**：上游 `tests.yml` 的 `hatch test -py=<版本>` 在 Windows 預設 shell（PowerShell）下會被拆成 `-py=3` 與 `.12`，hatch 回報 `No environments were selected`；本 fork 把該 workflow 轉成 `windows-latest` 後從未實際跑過，所以直到本次才暴露。本 workflow 改用 `hatch test --python <版本>`，並有測試禁止 `run:` 行出現 `-py=`。
+
 **限制**：Python 3.14 不在本 workflow 內（上游 `tests.yml` 也沒有），3.14 只有維護 gate。產品測試紅燈要先分辨是否本次改動造成，不能用跳過測試消音。
 
 ## 2026-11-21：增量審查（`aa9b84c..c8377f4`）修正
