@@ -193,6 +193,7 @@ Commit 軸無新增（上游 `main` 仍是 `7482c09`）。新增 17 筆 PR（全
 ### 採用 1 筆（Windows／CJK 例外類別，移植做法不是 diff）
 
 - **#2803**（head `c03c939`，+424／-292，5 檔；修 issue #1219）：`markitdown input.docx > out.md` 在 stdout 為 cp950／cp1252／ascii 時，目前的 `_handle_output` 以 `errors="replace"` 把無法編碼的字元換成 `?`（本 fork `__main__.py` 的 else 分支，`encoding = sys.stdout.encoding or "utf-8"`），繁中文字直接變 `?`，而 `-o` 路徑本來就寫 UTF-8，兩條路徑不一致。缺陷在本 fork 重現（還原修正後 `test_redirected_stdout_preserves_unicode` 失敗，見下）。**只移植設計**：stdout 有 `buffer` 且非 tty 時，flush 後以 UTF-8 寫入 `buffer`；互動終端與純文字串流維持原行為。**沒照抄**：上游同一個 PR 把 CLI 參數宣告與驗證拆成 `_cli_args.py`／`_cli_options.py` 兩個私有模組（約 700 行搬移），與本缺陷無關，且會讓之後 cherry-pick 上游 `__main__.py` 的修正全部衝突，所以不搬。測試移植 4 個（cp950／cp1252／ascii 重導向、互動終端沿用終端編碼、純文字串流）；cp950 為本 fork 加的案例（繁中 Windows 的實際碼頁）。與 2026-10-25 採用的 #1656（`sys.stdout.encoding` 為 None）同一函式、互補。觸發條件：上游合併 #2803 或以不同做法修 #1219 時，以上游版本為準重新對齊，衝突時採上游。
+  - **2026-11-21 更正**：上句「繁中文字直接變 `?`」不正確。實測 cp950 能編碼一般繁中字（`中文測試`、`’“”` 原樣保留），只有碼頁外的字元變 `?`（`é`、emoji、`堃` 等 Big5 外的字）。而「非 tty 一律 UTF-8」讓 PowerShell 擷取與接 cmdlet 變亂碼，規則已改寫，見下方 2026-11-21 條目。
 
 ### 不採用（維持「OPEN 的上游 PR 不 fork-ahead」政策；非 Windows／CJK 專屬）
 
@@ -289,3 +290,32 @@ Commit 軸無新增（上游 `main` 仍是 `7482c09`）。新增 17 筆 PR（全
 - #2850（jurnal tugas akhir bab 1 2 3）：學生論文上傳，已關閉。不適用。
 
 水位：PR `#2810`→`#2852`；Issue `#2806`→`#2850`；Commit `7482c09`→`ed17895`（完整 SHA：`ed178952a6672abdfd35b5f9e76a80b6cefc086e`）。
+
+## 2026-11-21：增量審查（`aa9b84c..c8377f4`）修正
+
+### CLI 重導向輸出編碼改依消費端選擇（F-2；F-3 未驗證）
+
+PowerShell 7 把原生程式的 stdout 一律接成 pipe，`$x = markitdown f`、`markitdown f | Select-String`、`markitdown f > out.md` 三者在 Python 端都是 `GetFileType == FILE_TYPE_PIPE`，無法區分；cmd.exe 的 `>` 則給磁碟檔。PowerShell 擷取與接 cmdlet 時以 `[Console]::OutputEncoding`（主控台輸出碼頁）解碼。規則：
+
+1. 明確指定的 Python I/O 編碼優先：`PYTHONIOENCODING`，或 UTF-8 mode（`PYTHONUTF8=1`／`-X utf8`）。
+2. Windows 且 stdout 是 pipe、有主控台：用主控台輸出碼頁（`GetConsoleOutputCP()`；65001 即 UTF-8），碼頁外字元以 `?` 取代。
+3. 其他（磁碟檔、沒有主控台、非 Windows）：UTF-8，與 `-o` 相同（保留 #1219 對 cmd.exe `>` 的修正）。
+
+實測（PowerShell 7.7.0，`[Console]::OutputEncoding` = 950，docx 內文 `中文測試 hello`；「舊」為 `c4b726c` 之前，「c4b726c」為改前 HEAD）：
+
+| 情境 | 舊 | c4b726c | 本次 |
+| --- | --- | --- | --- |
+| `$x = markitdown f.docx` 含 `中文測試` | 是 | 否（亂碼） | 是 |
+| `markitdown f.docx \| Select-String 中文測試` | 命中 | 未命中 | 命中 |
+| pwsh `markitdown f.docx > out.md` 檔案位元組 | cp950 | UTF-8 | cp950 |
+| cmd.exe `markitdown f.docx > out.md` 檔案位元組 | cp950 | UTF-8 | UTF-8 |
+
+`[Console]::OutputEncoding` = 65001 時本次四種情境都是 UTF-8 且讀回正確。取捨：pwsh 的 `>` 回到碼頁輸出（`Get-Content -Encoding 950` 讀回正確，預設 UTF-8 讀回亂碼），因為 Python 端看不出它和擷取的差別；要 UTF-8 檔案用 `-o out.md`，或設 `PYTHONIOENCODING=utf-8`。Windows PowerShell 5.1（`powershell.exe`）在本機呼叫一律卡住，**未驗證**；依其 `>` 先以 OutputEncoding 解碼再寫 UTF-16 的行為推論，本次規則對它也較正確，但沒有實測證據。觸發條件：上游合併 #2803 或以其他做法修 #1219 時，重新比對本規則，與上游衝突時以上游為準並重跑上表。
+
+### OCR plugin 沒有 OCR service 時不解析 XLSX 圖片（F-1、H-1）
+
+`XlsxConverterWithOCR` 在沒有 `ocr_service`（建構參數或呼叫參數皆無）時直接委派給原生 `XlsxConverter`：hook 本來就會對每張圖回 None，所以輸出不變，但不再讀取、也不會因缺圖或斷掉的關聯（`KeyError`）而失敗，也不把所有嵌入圖讀進記憶體。核心 `_XlsxImages` 不改：上游 #2506 的 `test_malformed_image_reference_does_not_become_silent_native_fallback` 刻意讓壞參照在 converter 層丟例外、由 dispatcher 退回內建 converter；上游 `main`（`ed17895`）沒有後續修正。有 OCR service 時遇壞圖仍照上游行為（整份退回原生輸出）。觸發條件：上游改動 `_xlsx_images.py` 的錯誤處理時，改採上游。
+
+### DOCX styles.xml 不是 well-formed 時仍正規化雙刪除線（H-2）
+
+`_pre_process_styles` 嚴格解析失敗時，以 `recover=True` 重試，仍保留 `resolve_entities=False, no_network=True`，取回舊版寬鬆 strike 步驟對這類檔案的修復效果；只有實際做了修復才回寫。測試同時驗證外部實體不會被展開。
