@@ -30,6 +30,11 @@ class XlsxConverterWithOCR(XlsxConverter):
         stream_info: StreamInfo,
         **kwargs: Any,
     ) -> DocumentConverterResult:
+        if not (kwargs.get("ocr_service") or self.ocr_service):
+            # Without a recognizer the hook declines every image, so skip image
+            # parsing: output stays exactly native, and broken or huge embedded
+            # media that the native converter ignores cannot fail or bloat it.
+            return XlsxConverter().convert(file_stream, stream_info, **kwargs)
         kwargs["_xlsx_ocr_cache"] = {}
         return super().convert(file_stream, stream_info, **kwargs)
 

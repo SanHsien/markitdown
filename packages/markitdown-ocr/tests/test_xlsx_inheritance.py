@@ -21,6 +21,7 @@ import pytest
 from markitdown import FileConversionException, MarkItDown, StreamInfo
 from markitdown.converters import XlsxConverter
 from markitdown.converters import _xlsx_converter
+from markitdown.converter_utils import _xlsx_images
 import markitdown._markitdown as markitdown_module
 from markitdown_ocr._ocr_service import OCRResult
 from markitdown_ocr._xlsx_converter_with_ocr import XlsxConverterWithOCR
@@ -321,6 +322,40 @@ def test_thrown_ocr_errors_use_standard_dispatcher_fallback() -> None:
     assert any(
         attempt.exc_info and attempt.exc_info[1] is error
         for attempt in aggregate.value.attempts
+    )
+
+
+def _without_media(data: bytes) -> bytes:
+    """Keep the drawing relationships but drop every embedded image part."""
+    output = io.BytesIO()
+    with zipfile.ZipFile(io.BytesIO(data)) as source:
+        with zipfile.ZipFile(output, "w") as target:
+            for entry in source.infolist():
+                if not entry.filename.startswith("xl/media/"):
+                    target.writestr(entry, source.read(entry))
+    return output.getvalue()
+
+
+@pytest.mark.parametrize("data", [_workbook(), _without_media(_workbook())])
+def test_no_service_never_parses_images_so_broken_media_stays_native(
+    monkeypatch: pytest.MonkeyPatch, data: bytes
+) -> None:
+    # Without a recognizer every image would be declined, so the converter must
+    # not read (or fail on) embedded media the native converter ignores.
+    monkeypatch.setattr(
+        _xlsx_images,
+        "_XlsxImages",
+        Mock(side_effect=AssertionError("images parsed without OCR service")),
+    )
+    assert _convert(XlsxConverterWithOCR(), data) == _convert(XlsxConverter(), data)
+
+
+def test_plugin_without_llm_converts_workbook_with_missing_image_directly() -> None:
+    data = _without_media(_workbook())
+    md = MarkItDown(enable_builtins=False)
+    md.register_converter(XlsxConverterWithOCR(), priority=-1)
+    assert md.convert_stream(io.BytesIO(data), stream_info=_INFO).markdown == (
+        _convert(XlsxConverter(), data)
     )
 
 
