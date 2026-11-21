@@ -41,18 +41,27 @@ def _relationships(
     }
 
 
+class _ImageTooLarge(ValueError):
+    def __init__(self, size: int, limit: int):
+        super().__init__(f"{size} bytes exceeds the {limit}-byte limit")
+
+
 class _XlsxImages:
     def __init__(
         self,
         file_stream: BinaryIO,
         on_unreadable: Optional[Callable[[str, Exception], None]] = None,
+        max_image_bytes: Optional[int] = None,
     ):
         """Collect embedded images per sheet.
 
         An image whose relationship or package part is missing raises by
         default (upstream #2506). When ``on_unreadable`` is given it is called
-        with the reference and the error instead; if it returns, that image is
-        skipped and collection continues.
+        with the reference and the error instead; if it returns, that image
+        (or, for a missing drawing part, that drawing) is skipped and
+        collection continues. ``max_image_bytes`` (requires ``on_unreadable``)
+        skips images whose declared uncompressed size is larger, before they
+        are read.
         """
         self._sheets: dict[str, list[tuple[bytes, StreamInfo]]] = {}
         with zipfile.ZipFile(file_stream) as archive:
@@ -81,9 +90,17 @@ class _XlsxImages:
                 drawing_parts = _relationships(archive, sheet_part, "drawing")
                 images = self._sheets.setdefault(sheet.attrib["name"], [])
                 for drawing in drawings:
-                    drawing_part = drawing_parts[drawing.attrib[_REL_ID]]
+                    reference = drawing.attrib[_REL_ID]
+                    try:
+                        drawing_part = drawing_parts[reference]
+                        drawing_xml = archive.read(drawing_part)
+                    except (KeyError, zipfile.BadZipFile, zlib.error) as error:
+                        if on_unreadable is None:
+                            raise
+                        on_unreadable(drawing_parts.get(reference, reference), error)
+                        continue
                     image_parts = _relationships(archive, drawing_part, "image")
-                    drawing_root = ET.fromstring(archive.read(drawing_part))
+                    drawing_root = ET.fromstring(drawing_xml)
                     # Match openpyxl's image traversal, not its XML serialization order.
                     anchors = [
                         anchor
@@ -98,6 +115,16 @@ class _XlsxImages:
                                 continue
                             try:
                                 image_part = image_parts[relationship]
+                                if on_unreadable is not None and (
+                                    max_image_bytes is not None
+                                ):
+                                    size = archive.getinfo(image_part).file_size
+                                    if size > max_image_bytes:
+                                        on_unreadable(
+                                            image_part,
+                                            _ImageTooLarge(size, max_image_bytes),
+                                        )
+                                        continue
                                 data = archive.read(image_part)
                             except (KeyError, zipfile.BadZipFile, zlib.error) as error:
                                 if on_unreadable is None:

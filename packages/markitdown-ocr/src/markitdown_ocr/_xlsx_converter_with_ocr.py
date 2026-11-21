@@ -11,10 +11,21 @@ from markitdown.converters import XlsxConverter
 from ._ocr_service import LLMVisionOCRService, _extract_text_with_metadata
 
 
-class XlsxConverterWithOCR(XlsxConverter):
-    """Recognize embedded images while inheriting native XLSX conversion."""
+DEFAULT_MAX_IMAGE_BYTES = 20 * 1024 * 1024
 
-    def __init__(self, ocr_service: Optional[LLMVisionOCRService] = None):
+
+class XlsxConverterWithOCR(XlsxConverter):
+    """Recognize embedded images while inheriting native XLSX conversion.
+
+    Images larger than ``max_image_bytes`` (declared uncompressed size; None
+    disables the cap) are skipped with a RuntimeWarning before being read.
+    """
+
+    def __init__(
+        self,
+        ocr_service: Optional[LLMVisionOCRService] = None,
+        max_image_bytes: Optional[int] = DEFAULT_MAX_IMAGE_BYTES,
+    ):
         super().__init__()
         if not hasattr(XlsxConverter, "_image_to_html"):
             raise RuntimeError(
@@ -23,6 +34,11 @@ class XlsxConverterWithOCR(XlsxConverter):
                 "Upgrade with: pip install --upgrade 'markitdown>=0.1.8b3'."
             )
         self.ocr_service = ocr_service
+        self.max_image_bytes = max_image_bytes
+
+    @property
+    def _max_image_bytes(self) -> Optional[int]:  # type: ignore[override]
+        return self.max_image_bytes
 
     def convert(
         self,
@@ -39,11 +55,12 @@ class XlsxConverterWithOCR(XlsxConverter):
         return super().convert(file_stream, stream_info, **kwargs)
 
     def _unreadable_image(self, reference: str, error: Exception) -> None:
-        # Fork divergence: one broken image must not discard the OCR output of
-        # every other image (or the whole workbook when no builtin converter
-        # can fall back). Report it, like an OCR error, and skip only it.
+        # Fork divergence: one broken or oversized image (or drawing) must not
+        # discard the OCR output of every other image, or the whole workbook
+        # when no builtin converter can fall back. Report it, like an OCR
+        # error, and skip only it.
         warn(
-            f"XLSX embedded image {reference!r} could not be read ({error!r}); "
+            f"XLSX embedded image {reference!r} could not be read ({error}); "
             "skipping it.",
             RuntimeWarning,
             stacklevel=2,

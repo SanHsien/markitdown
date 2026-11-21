@@ -154,7 +154,9 @@ class XlsxConverter(DocumentConverter):
                     images = _XlsxImages(workbook_stream)
                 else:
                     images = _XlsxImages(
-                        workbook_stream, on_unreadable=self._unreadable_image
+                        workbook_stream,
+                        on_unreadable=self._unreadable_image,
+                        max_image_bytes=self._max_image_bytes,
                     )
 
             for s in sheets:
@@ -198,10 +200,15 @@ class XlsxConverter(DocumentConverter):
         """
         return None
 
+    # Per-image size cap, honoured only with an _unreadable_image override.
+    _max_image_bytes: Optional[int] = None
+
     def _unreadable_image(self, reference: str, error: Exception) -> None:
         """Handle an embedded image whose relationship or part cannot be read.
 
-        Called only when ``_image_to_html`` is overridden. The default
+        Called only when ``_image_to_html`` is overridden, for a missing
+        drawing part, a missing image relationship or part, or an image over
+        ``_max_image_bytes``. The default
         re-raises, so the converter fails and the dispatcher can fall back to
         another converter (upstream behaviour). Return instead to skip just
         that image and keep converting the workbook.

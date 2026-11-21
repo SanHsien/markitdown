@@ -424,6 +424,70 @@ def test_broken_image_is_skipped_with_warning_and_other_images_still_ocr(
     assert "Header\\_one" in dispatched and "Final" in dispatched
 
 
+def test_missing_drawing_part_warns_and_keeps_tables_without_fallback() -> None:
+    # A sheet relationship to an absent drawing part must not lose the whole
+    # workbook when nothing can fall back.
+    data = _drop_member("xl/drawings/drawing1.xml")(_workbook((_RED, _BLUE)))
+    service = _recognize_blue()
+    with pytest.warns(RuntimeWarning, match="could not be read"):
+        result = _convert(XlsxConverterWithOCR(service), data)
+    assert result == _convert(XlsxConverter(), data)
+    service.extract_text.assert_not_called()
+
+    no_fallback = MarkItDown(enable_builtins=False)
+    no_fallback.register_converter(XlsxConverterWithOCR(service), priority=-1)
+    with pytest.warns(RuntimeWarning, match="could not be read"):
+        dispatched = no_fallback.convert_stream(
+            io.BytesIO(data), stream_info=_INFO
+        ).markdown
+    assert "Header\\_one" in dispatched and "Final" in dispatched
+
+
+def test_images_over_the_byte_limit_are_skipped_before_reading() -> None:
+    data = _workbook((_RED,))
+    service = _recognize_blue()
+    over = XlsxConverterWithOCR(service, max_image_bytes=len(_RED) - 1)
+    with pytest.warns(RuntimeWarning, match="byte limit"):
+        assert _convert(over, data) == _convert(XlsxConverter(), data)
+    service.extract_text.assert_not_called()
+
+    at_limit = XlsxConverterWithOCR(service, max_image_bytes=len(_RED))
+    assert _convert(at_limit, data).count("[Image OCR]") == 1
+    service.extract_text.assert_called_once()
+
+
+def test_oversized_image_is_never_read_into_memory(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original_read = zipfile.ZipFile.read
+
+    def read(self, name, *args, **kwargs):
+        member = name.filename if isinstance(name, zipfile.ZipInfo) else name
+        assert not member.startswith("xl/media/"), "oversized image was read"
+        return original_read(self, name, *args, **kwargs)
+
+    monkeypatch.setattr(zipfile.ZipFile, "read", read)
+    converter = XlsxConverterWithOCR(_recognize_blue(), max_image_bytes=1)
+    with pytest.warns(RuntimeWarning, match="byte limit"):
+        _convert(converter, _workbook((_RED,)))
+
+
+def test_default_byte_limit_is_20_mib_and_none_disables_it() -> None:
+    assert XlsxConverterWithOCR().max_image_bytes == 20 * 1024 * 1024
+    assert XlsxConverterWithOCR(max_image_bytes=None).max_image_bytes is None
+
+
+def test_base_hook_without_skip_override_keeps_upstream_raise() -> None:
+    # Fork divergence is opt-in: a plain image-hook subclass still fails loudly.
+    class Plain(XlsxConverter):
+        def _image_to_html(self, image_stream, stream_info, **kwargs):
+            return "<p>recognized</p>"
+
+    data = _drop_member("xl/drawings/drawing1.xml")(_workbook())
+    with pytest.raises(KeyError):
+        _convert(Plain(), data)
+
+
 def test_older_core_fails_with_actionable_upgrade_message(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
