@@ -33,6 +33,7 @@
 | `docs/DECISIONS.md`、`docs/UPSTREAM.md`、`docs/DEVELOPMENT.md` | fork 維護文件 |
 | `REVIEW.md` | 全庫風險與安全快照 |
 | `.cursor/rules/no-upstream-pr.mdc` | Cursor IDE 機械防線（強制鎖定 SanHsien repo，防止誤開上游 PR） |
+| `packages/` 內的 fork-local 產品修正 | 預設以上游為準；例外移植與本 fork 自修（例：XLSX 壞圖的 `XlsxConverter._unreadable_image` hook）逐條記在 `docs/DECISIONS.md` |
 
 產品程式碼在 `packages/` 底下，以上游為準。
 

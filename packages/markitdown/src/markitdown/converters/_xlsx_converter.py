@@ -146,7 +146,16 @@ class XlsxConverter(DocumentConverter):
             if type(self)._image_to_html is not XlsxConverter._image_to_html:
                 from ..converter_utils._xlsx_images import _XlsxImages
 
-                images = _XlsxImages(workbook_stream)
+                if (
+                    type(self)._unreadable_image
+                    is XlsxConverter._unreadable_image
+                ):
+                    # Upstream #2506 path, unchanged: broken references raise.
+                    images = _XlsxImages(workbook_stream)
+                else:
+                    images = _XlsxImages(
+                        workbook_stream, on_unreadable=self._unreadable_image
+                    )
 
             for s in sheets:
                 md_content += f"## {s}\n"
@@ -188,6 +197,16 @@ class XlsxConverter(DocumentConverter):
         conversion failure path.
         """
         return None
+
+    def _unreadable_image(self, reference: str, error: Exception) -> None:
+        """Handle an embedded image whose relationship or part cannot be read.
+
+        Called only when ``_image_to_html`` is overridden. The default
+        re-raises, so the converter fails and the dispatcher can fall back to
+        another converter (upstream behaviour). Return instead to skip just
+        that image and keep converting the workbook.
+        """
+        raise error
 
 
 class XlsConverter(DocumentConverter):

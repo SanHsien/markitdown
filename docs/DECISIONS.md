@@ -330,7 +330,11 @@ PowerShell 7 把原生程式的 stdout 一律接成 pipe，`$x = markitdown f`�
 
 ### OCR plugin 沒有 OCR service 時不解析 XLSX 圖片（F-1、H-1）
 
-`XlsxConverterWithOCR` 在沒有 `ocr_service`（建構參數或呼叫參數皆無）時直接委派給原生 `XlsxConverter`：hook 本來就會對每張圖回 None，所以輸出不變，但不再讀取、也不會因缺圖或斷掉的關聯（`KeyError`）而失敗，也不把所有嵌入圖讀進記憶體。核心 `_XlsxImages` 不改：上游 #2506 的 `test_malformed_image_reference_does_not_become_silent_native_fallback` 刻意讓壞參照在 converter 層丟例外、由 dispatcher 退回內建 converter；上游 `main`（`ed17895`）沒有後續修正。有 OCR service 時遇壞圖仍照上游行為（整份退回原生輸出）。觸發條件：上游改動 `_xlsx_images.py` 的錯誤處理時，改採上游。
+`XlsxConverterWithOCR` 在沒有 `ocr_service`（建構參數或呼叫參數皆無）時直接委派給原生 `XlsxConverter`：hook 本來就會對每張圖回 None，所以輸出不變，但不再讀取、也不會因缺圖或斷掉的關聯（`KeyError`）而失敗，也不把所有嵌入圖讀進記憶體。核心 `_XlsxImages` 不改：上游 #2506 的 `test_malformed_image_reference_does_not_become_silent_native_fallback` 刻意讓壞參照在 converter 層丟例外、由 dispatcher 退回內建 converter；上游 `main`（`ed17895`）沒有後續修正。~~有 OCR service 時遇壞圖仍照上游行為（整份退回原生輸出）。~~（2026-11-21 由下一條取代）觸發條件：上游改動 `_xlsx_images.py` 的錯誤處理時，改採上游。
+
+### OCR plugin 有 OCR service 時跳過壞圖、其餘圖片照常 OCR（F-1 後續，fork divergence）
+
+獨立驗收發現：有 `ocr_service` 時，`MarkItDown(enable_builtins=False)` 或直接呼叫 `XlsxConverterWithOCR` 遇到圖片關聯指向不存在的媒體檔（或關聯 id 不存在）仍丟 `KeyError`，沒有內建 converter 可退回，整份活頁簿連表格一起失敗；有內建 converter 時也只是整份退回原生、其他圖片的 OCR 全部消失。做法：核心新增 `XlsxConverter._unreadable_image(reference, error)` hook，`_XlsxImages` 讀圖（關聯查找與 `archive.read`）遇 `KeyError`／`BadZipFile`／`zlib.error` 時呼叫它；**沒覆寫此 hook 的 converter 仍以 `_XlsxImages(workbook_stream)` 原樣呼叫、壞參照照常丟例外**（預設 hook 本身也是 re-raise），上游 #2506 的 `test_malformed_image_reference_does_not_become_silent_native_fallback` 照舊通過。`XlsxConverterWithOCR` 覆寫成發 `RuntimeWarning`（與既有「OCR 回報錯誤就警告並保留原生」慣例一致）後只跳過那張圖，不論有沒有內建 converter 可退回都一樣——上游該測試防的是「靜默」退回，警告不是靜默，且保留的輸出比整份退回多。與上游差異：核心多一個預設等同上游行為的 hook；plugin 行為改為跳過壞圖。測試：`test_broken_image_is_skipped_with_warning_and_other_images_still_ocr[missing-media-part|dangling-relationship]`。觸發條件：上游改動 `_xlsx_images.py` 的錯誤處理或 OCR plugin 的壞圖策略時，改採上游並移除此 hook。
 
 ### DOCX styles.xml 不是 well-formed 時仍正規化雙刪除線（H-2）
 

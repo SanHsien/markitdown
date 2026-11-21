@@ -15,8 +15,8 @@
 
 | ID | 嚴重度 | 問題 | 修正 | Commit（2026-11-21） |
 |---|---|---|---|---|
-| F-1 | P2 | 啟用 OCR plugin（即使沒設 LLM）時，XLSX 的圖片關聯指向不存在的媒體檔，`XlsxConverterWithOCR` 丟 `KeyError` | 沒有 OCR service 時直接委派原生 `XlsxConverter`，完全不解析圖片；核心 `_XlsxImages` 照上游 #2506 設計不改（有 service 時壞參照仍由 dispatcher 退回內建 converter）。測試：`test_no_service_never_parses_images_so_broken_media_stays_native`、`test_plugin_without_llm_converts_workbook_with_missing_image_directly` | `ea28184` |
-| H-1 | hardening | plugin 啟用時不論有無 service 都把所有嵌入圖讀進記憶體 | 與 F-1 同一修正：沒有 service 不建 `_XlsxImages` | `ea28184` |
+| F-1 | P2 | 啟用 OCR plugin（即使沒設 LLM）時，XLSX 的圖片關聯指向不存在的媒體檔，`XlsxConverterWithOCR` 丟 `KeyError` | 沒有 OCR service 時直接委派原生 `XlsxConverter`，完全不解析圖片；測試：`test_no_service_never_parses_images_so_broken_media_stays_native`、`test_plugin_without_llm_converts_workbook_with_missing_image_directly`。後續（獨立驗收發現有 service 且 `enable_builtins=False`／直接呼叫時仍整份失敗）：核心加 `_unreadable_image` hook（預設 re-raise，保留上游 #2506 行為），OCR plugin 覆寫成警告並只跳過壞圖，其餘圖片照常 OCR。測試：`test_broken_image_is_skipped_with_warning_and_other_images_still_ocr`（缺媒體檔、懸空關聯兩例） | `a88c8e4`；後續見本 commit（2026-11-21） |
+| H-1 | hardening | plugin 啟用時不論有無 service 都把所有嵌入圖讀進記憶體 | 與 F-1 同一修正：沒有 service 不建 `_XlsxImages` | `a88c8e4` |
 | F-2 | P2 | `c4b726c` 讓非 tty stdout 一律寫 UTF-8；PowerShell（OutputEncoding 950）的 `$x = markitdown f`、`\| Select-String` 變亂碼 | 依消費端選編碼：`PYTHONIOENCODING`／UTF-8 mode 優先；Windows pipe 用主控台輸出碼頁；檔案與其他情況 UTF-8。實測表與取捨見 `docs/DECISIONS.md` 2026-11-21。測試：`test_redirected_encoding_follows_the_consumer_without_explicit_override`、`test_explicit_python_encoding_overrides_the_console_code_page`、`test_explicit_pythonioencoding_is_honored_for_redirected_output`、`test_stdout_redirected_to_a_file_is_utf8`、`test_piped_output_in_a_code_page_replaces_unencodable_text` | `c0f3ad6` |
 | H-2 | hardening | `_pre_process_styles` 改嚴格 lxml 解析後，styles.xml 不是 well-formed 時雙刪除線正規化一起失效 | 嚴格解析失敗改用 `recover=True` 重試，保留 `resolve_entities=False, no_network=True`。測試：`test_not_well_formed_styles_still_normalize_double_strike`、`test_recovering_malformed_styles_does_not_expand_external_entities` | `8c0d54b` |
 
@@ -36,6 +36,8 @@
 
 ## 驗證證據
 
+- 修復時更正：本表原記 F-1／H-1 commit `ea28184` 不在任何分支上（改寫前的舊 hash），實際落在 `main` 的是 `a88c8e4`。
+- F-1 後續：`test_broken_image_is_skipped_with_warning_and_other_images_still_ocr` 兩例在修前皆 `KeyError` 失敗（缺媒體檔、懸空關聯 `missing`），修後通過。
 - 新測試在未修的原始碼上失敗（F-1 3 個、F-2 12 個、H-2 2 個），修正後通過；`test_stdout_redirected_to_a_file_is_utf8` 與 `PYTHONIOENCODING=utf-8` 案例修前修後都過，是保護 #1219 修正的回歸測試。
 - 聚焦套件（`packages/markitdown-ocr/tests`、`packages/markitdown-sample-plugin/tests`、核心 `test_docx.py`、`test_cli_misc.py`、`test_xlsx.py`）：279 passed、1 skipped。核心與 MCP 全套未跑完（核心全套在本機約 15 分鐘只跑到 5%，預估逾一小時，中途停止），不宣稱全套綠燈。
 - `pwsh -NoProfile -File tools\dev_check.ps1`：WINDOWS DEV CHECK GREEN。

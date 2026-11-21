@@ -359,6 +359,71 @@ def test_plugin_without_llm_converts_workbook_with_missing_image_directly() -> N
     )
 
 
+def _drop_member(name: str):
+    def rewrite(data: bytes) -> bytes:
+        output = io.BytesIO()
+        with zipfile.ZipFile(io.BytesIO(data)) as source:
+            with zipfile.ZipFile(output, "w") as target:
+                for entry in source.infolist():
+                    if entry.filename != name:
+                        target.writestr(entry, source.read(entry))
+        return output.getvalue()
+
+    return rewrite
+
+
+def _dangling_relationship(data: bytes) -> bytes:
+    output = io.BytesIO()
+    with zipfile.ZipFile(io.BytesIO(data)) as source:
+        with zipfile.ZipFile(output, "w") as target:
+            for entry in source.infolist():
+                content = source.read(entry)
+                if entry.filename == "xl/drawings/drawing1.xml":
+                    content = content.replace(b'embed="rId1"', b'embed="missing"', 1)
+                target.writestr(entry, content)
+    return output.getvalue()
+
+
+def _recognize_blue() -> Mock:
+    def recognize(stream):
+        return OCRResult(text="blue" if stream.read() == _BLUE else "red")
+
+    return Mock(extract_text=create_autospec(recognize, side_effect=recognize))
+
+
+@pytest.mark.parametrize(
+    "broken",
+    [_drop_member("xl/media/image1.png"), _dangling_relationship],
+    ids=["missing-media-part", "dangling-relationship"],
+)
+def test_broken_image_is_skipped_with_warning_and_other_images_still_ocr(
+    broken: Any,
+) -> None:
+    # One unreadable image must not discard the workbook's other OCR output,
+    # even when nothing (no builtins, direct call) can fall back.
+    data = broken(_workbook((_RED, _BLUE)))
+    service = _recognize_blue()
+    with pytest.warns(RuntimeWarning, match="could not be read") as warnings:
+        result = _convert(XlsxConverterWithOCR(service), data)
+    assert len(warnings) == 1
+    assert result.startswith(_convert(XlsxConverter(), data).split("## Other")[0])
+    assert "## Other" in result and "Final" in result
+    assert result.count("[Image OCR]") == 1
+    assert "*[Image OCR]  \nblue  \n[End OCR]*" in result
+    service.extract_text.assert_called_once()
+
+    no_fallback = MarkItDown(enable_builtins=False)
+    no_fallback.register_converter(XlsxConverterWithOCR(service), priority=-1)
+    with pytest.warns(RuntimeWarning, match="could not be read"):
+        dispatched = no_fallback.convert_stream(
+            io.BytesIO(data), stream_info=_INFO
+        ).markdown
+    # The dispatcher normalizes trailing line whitespace; compare content.
+    assert dispatched.count("[Image OCR]") == 1
+    assert "blue" in dispatched and "red" not in dispatched
+    assert "Header\\_one" in dispatched and "Final" in dispatched
+
+
 def test_older_core_fails_with_actionable_upgrade_message(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

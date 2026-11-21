@@ -4,6 +4,7 @@ import io
 import mimetypes
 import posixpath
 import zipfile
+import zlib
 from typing import Any, BinaryIO, Callable, Optional
 from urllib.parse import unquote
 
@@ -41,7 +42,18 @@ def _relationships(
 
 
 class _XlsxImages:
-    def __init__(self, file_stream: BinaryIO):
+    def __init__(
+        self,
+        file_stream: BinaryIO,
+        on_unreadable: Optional[Callable[[str, Exception], None]] = None,
+    ):
+        """Collect embedded images per sheet.
+
+        An image whose relationship or package part is missing raises by
+        default (upstream #2506). When ``on_unreadable`` is given it is called
+        with the reference and the error instead; if it returns, that image is
+        skipped and collection continues.
+        """
         self._sheets: dict[str, list[tuple[bytes, StreamInfo]]] = {}
         with zipfile.ZipFile(file_stream) as archive:
             workbook = _relationships(archive, "", "officeDocument")
@@ -84,7 +96,17 @@ class _XlsxImages:
                             if relationship is None:
                                 # Linked images are not embedded package content.
                                 continue
-                            image_part = image_parts[relationship]
+                            try:
+                                image_part = image_parts[relationship]
+                                data = archive.read(image_part)
+                            except (KeyError, zipfile.BadZipFile, zlib.error) as error:
+                                if on_unreadable is None:
+                                    raise
+                                on_unreadable(
+                                    image_parts.get(relationship, relationship),
+                                    error,
+                                )
+                                continue
                             extension = posixpath.splitext(image_part)[1].lower()
                             info = StreamInfo(
                                 mimetype=overrides.get(image_part)
@@ -93,7 +115,7 @@ class _XlsxImages:
                                 extension=extension,
                                 filename=posixpath.basename(image_part),
                             )
-                            images.append((archive.read(image_part), info))
+                            images.append((data, info))
 
     def to_html(
         self,

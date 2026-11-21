@@ -38,6 +38,17 @@ class XlsxConverterWithOCR(XlsxConverter):
         kwargs["_xlsx_ocr_cache"] = {}
         return super().convert(file_stream, stream_info, **kwargs)
 
+    def _unreadable_image(self, reference: str, error: Exception) -> None:
+        # Fork divergence: one broken image must not discard the OCR output of
+        # every other image (or the whole workbook when no builtin converter
+        # can fall back). Report it, like an OCR error, and skip only it.
+        warn(
+            f"XLSX embedded image {reference!r} could not be read ({error!r}); "
+            "skipping it.",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+
     def _image_to_html(
         self,
         image_stream: BinaryIO,
