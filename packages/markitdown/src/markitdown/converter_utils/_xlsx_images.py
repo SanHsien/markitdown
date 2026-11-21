@@ -41,9 +41,31 @@ def _relationships(
     }
 
 
+_READ_CHUNK = 64 * 1024
+
+
 class _ImageTooLarge(ValueError):
-    def __init__(self, size: int, limit: int):
-        super().__init__(f"{size} bytes exceeds the {limit}-byte limit")
+    def __init__(self, what: str, limit: int):
+        super().__init__(f"{what} exceeds the {limit}-byte limit")
+
+
+def _read_limited(archive: zipfile.ZipFile, part: str, limit: int) -> bytes:
+    """Read a member in bounded chunks, never holding more than ``limit + 1``.
+
+    ``ZipFile.read`` decompresses a whole member in one call even when its
+    declared size is small, so a forged size cannot be trusted for memory.
+    """
+    chunks = []
+    total = 0
+    with archive.open(part) as member:
+        while True:
+            chunk = member.read(min(_READ_CHUNK, limit + 1 - total))
+            if not chunk:
+                return b"".join(chunks)
+            total += len(chunk)
+            if total > limit:
+                raise _ImageTooLarge("decompressed data", limit)
+            chunks.append(chunk)
 
 
 class _XlsxImages:
@@ -60,8 +82,10 @@ class _XlsxImages:
         with the reference and the error instead; if it returns, that image
         (or, for a missing drawing part, that drawing) is skipped and
         collection continues. ``max_image_bytes`` (requires ``on_unreadable``)
-        skips images whose declared uncompressed size is larger, before they
-        are read.
+        skips an image whose declared size is larger without reading it, and
+        otherwise reads it in bounded chunks, abandoning it once more than
+        ``max_image_bytes`` decompressed bytes appear or the member is
+        corrupt (a forged smaller size ends in a CRC error).
         """
         self._sheets: dict[str, list[tuple[bytes, StreamInfo]]] = {}
         with zipfile.ZipFile(file_stream) as archive:
@@ -115,18 +139,26 @@ class _XlsxImages:
                                 continue
                             try:
                                 image_part = image_parts[relationship]
-                                if on_unreadable is not None and (
-                                    max_image_bytes is not None
-                                ):
+                                if on_unreadable is None or max_image_bytes is None:
+                                    data = archive.read(image_part)
+                                else:
+                                    # Fast path on the declared size, then a
+                                    # bounded read that does not trust it.
                                     size = archive.getinfo(image_part).file_size
                                     if size > max_image_bytes:
-                                        on_unreadable(
-                                            image_part,
-                                            _ImageTooLarge(size, max_image_bytes),
+                                        raise _ImageTooLarge(
+                                            f"declared size {size} bytes",
+                                            max_image_bytes,
                                         )
-                                        continue
-                                data = archive.read(image_part)
-                            except (KeyError, zipfile.BadZipFile, zlib.error) as error:
+                                    data = _read_limited(
+                                        archive, image_part, max_image_bytes
+                                    )
+                            except (
+                                KeyError,
+                                zipfile.BadZipFile,
+                                zlib.error,
+                                _ImageTooLarge,
+                            ) as error:
                                 if on_unreadable is None:
                                     raise
                                 on_unreadable(

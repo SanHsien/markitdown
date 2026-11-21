@@ -472,6 +472,65 @@ def test_oversized_image_is_never_read_into_memory(
         _convert(converter, _workbook((_RED,)))
 
 
+def _forged_size_media(payload: int, declared: int) -> bytes:
+    """Replace image1 with a highly compressible payload and forge its size.
+
+    Only the central directory's uncompressed size is rewritten, which is the
+    value zipfile trusts, so the declared-size precheck passes.
+    """
+    output = io.BytesIO()
+    with zipfile.ZipFile(io.BytesIO(_workbook((_RED,)))) as source:
+        with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as target:
+            for entry in source.infolist():
+                content = source.read(entry)
+                if entry.filename == "xl/media/image1.png":
+                    content = bytes(payload)
+                target.writestr(entry.filename, content)
+    data = bytearray(output.getvalue())
+    name = b"xl/media/image1.png"
+    position = data.find(b"PK\x01\x02")
+    while position != -1:
+        length = int.from_bytes(data[position + 28 : position + 30], "little")
+        if data[position + 46 : position + 46 + length] == name:
+            data[position + 24 : position + 28] = declared.to_bytes(4, "little")
+            break
+        position = data.find(b"PK\x01\x02", position + 4)
+    else:
+        raise AssertionError("central directory entry not found")
+    return bytes(data)
+
+
+def test_forged_declared_size_does_not_decompress_the_whole_member() -> None:
+    import tracemalloc
+
+    payload = 64 * 1024 * 1024
+    data = _forged_size_media(payload, declared=1000)
+    service = _recognize_blue()
+    converter = XlsxConverterWithOCR(service, max_image_bytes=1024 * 1024)
+    tracemalloc.start()
+    try:
+        with pytest.warns(RuntimeWarning, match="could not be read"):
+            result = _convert(converter, data)
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    assert peak < 16 * 1024 * 1024, f"peak {peak} bytes for a forged member"
+    assert "Header\\_one" in result and "Final" in result
+    service.extract_text.assert_not_called()
+
+
+def test_bounded_read_stops_after_limit_plus_one_bytes() -> None:
+    # Defense in depth behind the declared-size precheck.
+    stream = io.BytesIO()
+    with zipfile.ZipFile(stream, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("big", bytes(2 * 1024 * 1024))
+        archive.writestr("small", b"abc")
+    with zipfile.ZipFile(stream) as archive:
+        with pytest.raises(ValueError, match="byte limit"):
+            _xlsx_images._read_limited(archive, "big", 1024 * 1024)
+        assert _xlsx_images._read_limited(archive, "small", 3) == b"abc"
+
+
 def test_default_byte_limit_is_20_mib_and_none_disables_it() -> None:
     assert XlsxConverterWithOCR().max_image_bytes == 20 * 1024 * 1024
     assert XlsxConverterWithOCR(max_image_bytes=None).max_image_bytes is None
