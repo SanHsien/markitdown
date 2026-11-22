@@ -343,3 +343,7 @@ PowerShell 7 把原生程式的 stdout 一律接成 pipe，`$x = markitdown f`�
 ### DOCX styles.xml 不是 well-formed 時仍正規化雙刪除線（H-2）
 
 `_pre_process_styles` 嚴格解析失敗時，以 `recover=True` 重試，仍保留 `resolve_entities=False, no_network=True`，取回舊版寬鬆 strike 步驟對這類檔案的修復效果；只有實際做了修復才回寫。測試同時驗證外部實體不會被展開。
+
+## 2026-11-22：MCP `convert_to_markdown` 補寫 tool description
+
+上游的 description 只有一行，呼叫端 agent 看不到參數語意、權限邊界與失敗種類。改寫成逐句對得上實作的契約：`file:` 由 `convert_uri` 轉 `convert_local`，以伺服器行程的權限讀本機檔，host 只接受空白或 `localhost`；`data:` 由 `parse_data_uri` 就地解碼；回傳 `.markdown` 一整個字串、不分頁；`MarkItDown()` 沒傳 `llm_client`，圖片不會產生 LLM 描述；外掛只在 `MARKITDOWN_ENABLE_PLUGINS` 為 true／1／yes 時啟用（`check_plugins_enabled`）；錯誤種類對應 `__main__.py` 的六個 `ToolError` 分支。驗證：`packages/markitdown-mcp` 的 pytest 21 passed。這是上游檔，同步上游若衝突，以上游版為準再重新核對這段契約。

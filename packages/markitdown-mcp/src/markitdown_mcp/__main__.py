@@ -18,7 +18,21 @@ mcp = MCPServer("markitdown")
 
 @mcp.tool()
 async def convert_to_markdown(uri: str) -> str:
-    """Convert a resource described by an http:, https:, file: or data: URI to markdown"""
+    """Convert the resource at an http:, https:, file:, or data: URI to Markdown and return the text.
+
+    Use this to read a document such as a PDF, Word, Excel, PowerPoint, EPUB,
+    HTML, CSV, or ZIP file as Markdown. `uri` must be a complete URI:
+    http(s) URIs are fetched over the network, file: URIs are read from the
+    machine running this server with that process's permissions (the host part
+    must be empty or `localhost`), and data: URIs are decoded inline. The whole
+    converted document comes back as one string, with no paging. This server
+    passes no LLM client, so images get no generated description. Third-party
+    converter plugins run only when the server's environment sets
+    MARKITDOWN_ENABLE_PLUGINS to true, 1, or yes. On failure the tool returns
+    an error that names the cause: an unsupported format, the HTTP status of a
+    failed fetch, a resource that could not be fetched, a file that could not
+    be read, a failed conversion, or an invalid or unsupported URI.
+    """
     converter = MarkItDown(enable_plugins=check_plugins_enabled())
     try:
         return converter.convert_uri(uri).markdown
