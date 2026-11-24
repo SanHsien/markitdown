@@ -2,8 +2,8 @@
   "repo": "https://github.com/microsoft/markitdown.git",
   "branch": "main",
   "reviewed_through": "ed178952a6672abdfd35b5f9e76a80b6cefc086e",
-  "reviewed_date": "2026-11-09",
-  "notes": "Fork created from upstream main 9480644 (Added file paths tests. #2454). 2026-10-25 起例外移植 4 筆上游未合併 PR（#2620、#2674、#2738、#2742），理由與觸發條件見 docs/DECISIONS.md 2026-10-25 條目。 2026-11-02：審 PR #2782–#2810（17 筆）與 issue #2781–#2806（12 筆）；例外移植 #2803 的設計（重導向 stdout 一律寫 UTF-8），其餘不採用，理由見 docs/DECISIONS.md 2026-11-02 條目。 2026-11-09：審 commit ed17895（3 筆全部採用：#2837 ExifTool 大小寫、#2846 HTTPS 語音轉譯、#2845 README 託管服務）、PR #2811–#2852（31 筆）與 issue #2807–#2850（9 筆）；理由見 docs/DECISIONS.md 2026-11-09 條目。",
-  "reviewed_pr_through": 2852,
-  "reviewed_issue_through": 2850
+  "reviewed_date": "2026-11-24",
+  "notes": "Fork created from upstream main 9480644 (Added file paths tests. #2454). 2026-10-25 起例外移植 4 筆上游未合併 PR（#2620、#2674、#2738、#2742），理由與觸發條件見 docs/DECISIONS.md 2026-10-25 條目。 2026-11-02：審 PR #2782–#2810（17 筆）與 issue #2781–#2806（12 筆）；例外移植 #2803 的設計（重導向 stdout 一律寫 UTF-8），其餘不採用，理由見 docs/DECISIONS.md 2026-11-02 條目。 2026-11-09：審 commit ed17895（3 筆全部採用：#2837 ExifTool 大小寫、#2846 HTTPS 語音轉譯、#2845 README 託管服務）、PR #2811–#2852（31 筆）與 issue #2807–#2850（9 筆）；理由見 docs/DECISIONS.md 2026-11-09 條目。 2026-11-24：審 PR #2855–#2916（43 筆：32 延後、11 拒絕）與 issue #2853–#2917（17 筆：1 延後、16 拒絕）；上游 main 無新 commit，維持 ed17895；未改產品，逐筆 head、來源與觸發條件見 docs/DECISIONS.md 2026-11-24 條目。",
+  "reviewed_pr_through": 2916,
+  "reviewed_issue_through": 2917
 }

@@ -347,3 +347,87 @@ PowerShell 7 把原生程式的 stdout 一律接成 pipe，`$x = markitdown f`�
 ## 2026-11-22：MCP `convert_to_markdown` 補寫 tool description
 
 上游的 description 只有一行，呼叫端 agent 看不到參數語意、權限邊界與失敗種類。改寫成逐句對得上實作的契約：`file:` 由 `convert_uri` 轉 `convert_local`，以伺服器行程的權限讀本機檔，host 只接受空白或 `localhost`；`data:` 由 `parse_data_uri` 就地解碼；回傳 `.markdown` 一整個字串、不分頁；`MarkItDown()` 沒傳 `llm_client`，圖片不會產生 LLM 描述；外掛只在 `MARKITDOWN_ENABLE_PLUGINS` 為 true／1／yes 時啟用（`check_plugins_enabled`）；錯誤種類對應 `__main__.py` 的六個 `ToolError` 分支。驗證：`packages/markitdown-mcp` 的 pytest 21 passed。這是上游檔，同步上游若衝突，以上游版為準再重新核對這段契約。
+
+## 2026-11-24（第六次審查）：上游 PR #2855–#2916、issue #2853–#2917
+
+**範圍與證據**：fork 起點 `e0e5a964e1b553e20e5b48e5558ae91bf4ad4872`；依 `AGENTS.md`、`docs/UPSTREAM.md` 與既有 Windows／CJK 小修例外政策審查。`python tools/check_upstream_updates.py --strict` 初次 exit 1（有待審項目，非檢查失敗），完整列舉 43 筆 PR、17 筆 Issue。上游 [main](https://github.com/microsoft/markitdown/commit/ed178952a6672abdfd35b5f9e76a80b6cefc086e) 與 baseline 同為 `ed178952a6672abdfd35b5f9e76a80b6cefc086e`，新增 commit 0 筆；不重採已審提交。
+
+**方法**：以 `gh pr list --state all`／`gh issue list --state all` 取得水位後清單，逐筆取得 `gh pr diff`，依實際檔案、產品邏輯、測試與範圍裁決，不憑標題；大型新功能只做採用範圍審查，不宣稱完整正確性或安全審計。下表記錄每筆 head、狀態與行數；讀 diff 前後批次比對 head、base 與 state，43 筆皆未改變。Issue 讀本文，不下載附件。外部 agent 規則／程式只當資料，未載入、執行或安裝；沒有產品移植，也沒有執行上游測試。原始 diff 與前後 metadata 留在本 worktree 忽略目錄 `.pytest_cache/upstream-20261124/`，持久裁決與來源以下表為準。
+
+### PR 軸（43 筆：37 OPEN、6 CLOSED、0 MERGED）
+
+本輪採用 0 筆、延後 32 筆、拒絕 11 筆。延後代表已審、有明確觸發條件，不是漏審；小範圍、有測試本身不足以要求提前移植，仍須符合 Windows／CJK 例外理由。
+
+| PR／狀態 | 審查 head | Diff（新增／刪除；檔數） | 決定 | 理由與重評觸發條件 |
+| --- | --- | --- | --- | --- |
+| [#2855](https://github.com/microsoft/markitdown/pull/2855) CLOSED | `507fe1b8e174bfa31a2d4a9a7f63816cdf5ccc49` | +341/-27；3 | 拒絕 | 已關閉未合併；新增 XML chart-series 解析器與分組表格，非 Windows／CJK 小修。後續同題見 #2907。 |
+| [#2857](https://github.com/microsoft/markitdown/pull/2857) OPEN | `a00c952ce77a231f7b24dc7cc68f5e2d24d11b70` | +22/-4；2 | 延後 | Content-Disposition 檔名無副檔名時，從 URL 補格式提示；一般 HTTP 行為。觸發：上游合併。 |
+| [#2858](https://github.com/microsoft/markitdown/pull/2858) OPEN | `f569054c1fd0008daa501508bd3c9e28fd42d675` | +64/-2；2 | 延後 | 空 Atom feed 以 namespace 或必要 metadata 辨識；與 #2780／#2782／#2861 競合。觸發：上游擇一合併，或實際輸入命中既有空 feed 裁決。 |
+| [#2859](https://github.com/microsoft/markitdown/pull/2859) OPEN | `65d0c4cf8ef7e06ed93d17bdf8f50514302071fb` | +316/-32；2 | 延後 | 以 namespace URI 複製 OMML 節點，改寫 DOCX 數學前處理；有 namespace／Unicode 測試，但不是 Windows／CJK 專屬且範圍較廣。觸發：上游合併。 |
+| [#2861](https://github.com/microsoft/markitdown/pull/2861) OPEN | `0734b44b2774746a0f318842b71427cd51605209` | +35/-3；2 | 延後 | 有 Atom namespace 即允許零 entry，無 namespace 仍要求 entry；與 #2858 的無 namespace metadata 規則不同。觸發：上游擇一合併，或實際空 feed 輸入。 |
+| [#2863](https://github.com/microsoft/markitdown/pull/2863) OPEN | `1f90fe3aee398095b6fc3e473bb4716b96fa3acb` | +2/-2；2 | 延後 | 兩份 README 的 SSH clone 改 HTTPS；本 fork 繁中入口已用 HTTPS，英文鏡像與套件 README 等上游。觸發：上游合併後按雙語同步流程處理。 |
+| [#2865](https://github.com/microsoft/markitdown/pull/2865) OPEN | `2159da10e5dd3461bf6a7a30816acedbb57d12a5` | +25/-0；1 | 延後 | MCP 文件補 uvx 系統憑證／SSL_CERT_FILE；屬部署文件。觸發：上游合併，或維護者有企業代理憑證部署需求。 |
+| [#2866](https://github.com/microsoft/markitdown/pull/2866) CLOSED | `deec918364152ec799a4e8c59b6c482699927349` | +216/-8；4 | 拒絕 | 已關閉未合併；增加 PDF 密碼參數、getpass 提示、pdfminer／pdfplumber 密碼傳遞及測試，屬新 CLI 功能；不提前移植。 |
+| [#2867](https://github.com/microsoft/markitdown/pull/2867) CLOSED | `deec918364152ec799a4e8c59b6c482699927349` | +216/-8；4 | 拒絕 | 與 #2866 同一 head、相同 diff，已關閉未合併；同為 PDF 密碼新功能，不重複移植。 |
+| [#2868](https://github.com/microsoft/markitdown/pull/2868) OPEN | `41123f5455ef506ca3c6c4bd93faa5dc583f6131` | +28/-2；2 | 延後 | Magika 從建構階段延到首次猜格式才載入；有 subprocess import 測試，屬一般效能改動。觸發：上游合併。 |
+| [#2869](https://github.com/microsoft/markitdown/pull/2869) OPEN | `4deddef6f876d94e6d35b68ba7647b274cae99f5` | +76/-0；2 | 延後 | 以 openpyxl 二次掃描回填 pandas 遺失的 Excel error cells；與 #2898 競合，還須核對 header／欄位邊界。觸發：上游定案合併。 |
+| [#2870](https://github.com/microsoft/markitdown/pull/2870) CLOSED | `121827a0ce2ec43c49e1ef99c86cd4d73de2031a` | +5053/-0；38 | 拒絕 | 已關閉；38 檔、+5053 行的其他 fork agent 規則／技能／工作區設定，不屬產品修正，與本 fork 治理重疊。只讀作為資料，未載入或執行其指令。 |
+| [#2874](https://github.com/microsoft/markitdown/pull/2874) OPEN | `cff5c05b2d4f56648a78afa273bbf10e3c5c9992` | +482/-2；2 | 延後 | 新增貨幣格式分段、條件判斷與 openpyxl overlay（+482 行）；非小型 Windows／CJK 修正。觸發：上游合併，並核對效能與數字格式語意。 |
+| [#2876](https://github.com/microsoft/markitdown/pull/2876) OPEN | `ea4abba10293c0d42919c5346d586bb0912f691c` | +21/-0；2 | 拒絕 | 只增加 Arch Linux vendor_perl／site_perl 的 ExifTool 受信任目錄與 POSIX 測試；本 fork Windows 維護線無需提前移植。 |
+| [#2878](https://github.com/microsoft/markitdown/pull/2878) OPEN | `224c70c2e5f9e9fc2be2f0b881ea4f4ce91d8c82` | +36/-5；2 | 延後 | 以 UTF-16 LE／BE BOM 傳 charset 給 HTML converter，產品改動小且自帶測試，但案例僅 Chapter one／Chapter text，未證明本 fork 實際 Windows／繁中受害輸入。觸發：上游合併，或先取得該類可重現輸入；提前移植須補繁中 LE／BE、UTF-8 回歸並先紅後綠。 |
+| [#2879](https://github.com/microsoft/markitdown/pull/2879) OPEN | `b374688757802ceb22ed2a0deb6aba4b5d537958` | +99/-0；1 | 拒絕 | 新增 Ubuntu CodeQL 範本，actions 以 tag 引用；本 fork 已有 SHA 釘版 CodeQL workflow，不覆蓋現有安全與 Windows 維護設定。 |
+| [#2880](https://github.com/microsoft/markitdown/pull/2880) OPEN | `1afd362d2809437cf7e284d91ef95a5c7d431eff` | +1/-1；1 | 延後 | 只改上游根 README 的 clone URL，與 #2863 重複。觸發：上游合併後同步英文鏡像及繁中入口。 |
+| [#2881](https://github.com/microsoft/markitdown/pull/2881) OPEN | `50d8381accba83a2055ae024f0221fa7184b476a` | +12/-0；1 | 延後 | MCP README 增 pip 安裝的 Claude Desktop command 設定；屬文件。觸發：上游合併，或本 fork 有該部署需求。 |
+| [#2882](https://github.com/microsoft/markitdown/pull/2882) OPEN | `834668539e995b904e210670258f37c20a954909` | +286/-6；2 | 延後 | 新增 PDF 視覺順序 RTL 重排及 Arabic／Hebrew 測試（+286 行），不是 CJK 或 Windows 小修。觸發：上游合併。 |
+| [#2883](https://github.com/microsoft/markitdown/pull/2883) OPEN | `1f27bb9e2fe50acf4dd055f7773865a99c7971f3` | +27/-4；2 | 延後 | ZIP Markdown 由反覆串接改單次 join，附多 member 順序測試；不改檔名碼頁，非 #2756 的 cp950 修正。觸發：上游合併。 |
+| [#2884](https://github.com/microsoft/markitdown/pull/2884) OPEN | `cddcaa248c6390863ea5912a28ed632a191fb225` | +267/-5；4 | 延後 | MCP 延遲 import、重用 converter、thread lock、anyio 執行緒與 HTTP timeout，另關閉 debug；牽動資源／併發模型及依賴，不能當小修，且須保留本 fork 11-22 tool description。觸發：上游合併，或本 fork 重現記憶體／事件迴圈問題。 |
+| [#2885](https://github.com/microsoft/markitdown/pull/2885) OPEN | `112e9a02f2fcbf5ab768268bc03fae989bc55395` | +566/-27；6 | 延後 | MiniCPM-OCR 模型選擇、專用 prompt、OTSL 轉表格與後處理（6 檔、+566 行）；新增後端而非例外 bug fix。觸發：上游合併且本 fork 有後端需求。 |
+| [#2886](https://github.com/microsoft/markitdown/pull/2886) CLOSED | `df1dceb7ad72a42628249243ed2cf8774213d18c` | +763/-0；12 | 拒絕 | 已關閉；新增其他組織的內部 HTTP API、Docker／worker／認證與 service CI，超出本 fork 範圍。 |
+| [#2887](https://github.com/microsoft/markitdown/pull/2887) CLOSED | `5844a5cdbdc2ea3f74aa21d1399383b43befce6e` | +97/-9；7 | 拒絕 | 已關閉；diff 混入已採用的 HTTPS transcription／ExifTool／README 提交，另升上游 setup-python。維護 workflow 獨立且 SHA 釘版，不重複引進舊修正。 |
+| [#2888](https://github.com/microsoft/markitdown/pull/2888) OPEN | `c3cbd5fd77d4afb18e273e3d858014407bbd3cab` | +43/-3；2 | 延後 | XLSX／XLS 的 float_format 與 na_rep 改整數／空白輸出；一般格式政策，非 Windows／CJK。觸發：上游合併。 |
+| [#2889](https://github.com/microsoft/markitdown/pull/2889) OPEN | `68a890c11a28ce2f906743d02f88e388192944f9` | +124/-1；2 | 延後 | PPTX 從 connector XML 輸出形狀間 Connections，辨識箭頭／重名／隱藏線；新增輸出語意。觸發：上游合併。 |
+| [#2890](https://github.com/microsoft/markitdown/pull/2890) OPEN | `4adc71a3d5c25079d4e208566845faf3dea10d03` | +1225/-0；4 | 延後 | PDF opt-in 多行程、shared memory、Windows Job／Linux cgroup 資源探測與 fallback（+1225 行）；雖含 Windows 測試，仍是跨平台功能擴充，不符合小修例外。觸發：上游合併且有明確效能需求。 |
+| [#2891](https://github.com/microsoft/markitdown/pull/2891) OPEN | `1122619cc5f8afac19a0fc62d1198479793f419a` | +22/-0；2 | 延後 | RSS 無標題項目的日期前補空行，附回歸測試；一般版面修正。觸發：上游合併。 |
+| [#2892](https://github.com/microsoft/markitdown/pull/2892) OPEN | `4bfcef963ea09fa9aa6fe73dd4a872d91f797b3f` | +27/-1；2 | 延後 | HTML metadata 排除 SVG title，附測試；一般標題辨識修正。觸發：上游合併。 |
+| [#2894](https://github.com/microsoft/markitdown/pull/2894) OPEN | `76da2deadf7afa54f6fbde1ccc2cdf16e0db00be` | +25/-1；2 | 延後 | ipynb 的字串 source 先 splitlines 再取標題；與 #2763／#2768／#2777／#2778 同題。觸發：上游擇一合併。 |
+| [#2895](https://github.com/microsoft/markitdown/pull/2895) OPEN | `8a8e83ccb513ce307114072f83d3d68bb304769c` | +1/-0；1 | 延後 | 測試文件索引加 test_docintel_converter.py；不改測試行為。觸發：上游合併後核對本 fork 檔案是否存在再同步。 |
+| [#2898](https://github.com/microsoft/markitdown/pull/2898) OPEN | `1ce04caf6d53b4983f25bbec927c91c34f4009b8` | +46/-2；2 | 延後 | 暫改 pandas 私有 OpenpyxlReader._convert_cell 以保留 error cells；finally 會還原，但共用類別的修改期間仍可能污染併發讀取，不能當安全的逐呼叫修正。與 #2869 同題。觸發：上游定案合併，且回歸涵蓋併發、欄位及空值語意。 |
+| [#2901](https://github.com/microsoft/markitdown/pull/2901) OPEN | `688364f2ef9f0ced585372047464952ab6c6f987` | +71/-2；3 | 延後 | 首次 HTTP host DNS 解析後阻擋私網並設 timeout；requests 仍自動重新導向，且檢查後會再解析，未涵蓋 redirect／DNS 變化，不能宣稱完整 SSRF 防護。觸發：上游定案合併，或本 fork 對外提供 MCP HTTP／接收不可信 URI；需先定義目的地政策。 |
+| [#2905](https://github.com/microsoft/markitdown/pull/2905) OPEN | `832ce9dfb3f909d321fe89d9624ed049ac870a99` | +196/-9；8 | 拒絕 | 標題 MAINNET_RPC_URL，實際 diff 是 CodeQL 範本、上游 setup-python 及已採用的產品／README 歷史修正；非 RPC 功能。與現有治理重複，不能按標題採用。 |
+| [#2907](https://github.com/microsoft/markitdown/pull/2907) OPEN | `17fdff1b548accaa7cd630e358ed50914f37435d` | +123/-23；2 | 延後 | PPTX 依 plot 比較 categories，相同合表、不同分表；與 #2840／#2855 同題。觸發：上游擇一合併，或使用者實際簡報命中既有複合圖表裁決。 |
+| [#2908](https://github.com/microsoft/markitdown/pull/2908) OPEN | `38fffe8c6d54d04dc466870c0e15a08f35345152` | +1635/-6；14 | 延後 | 新增 ConversionWarning 公開 API、PDF 曲線偵測、診斷文件與 binary fixtures（14 檔、+1635 行）；屬輸出契約擴充，不是例外小修。觸發：上游合併且有診斷需求。未下載或執行 binary fixtures。 |
+| [#2910](https://github.com/microsoft/markitdown/pull/2910) OPEN | `832ce9dfb3f909d321fe89d9624ed049ac870a99` | +103/-4；3 | 拒絕 | 與 #2905 同一 head、不同 base；diff 是 CodeQL 與 setup-python，不是名為 MUDX-tech 的產品功能。現有 workflow 獨立維護，不採用。 |
+| [#2911](https://github.com/microsoft/markitdown/pull/2911) OPEN | `356b90ee25d39778e3079cc07d139db9a3259cb8` | +102/-0；2 | 拒絕 | 重複 CodeQL 範本另帶空白 @Mikke84 檔；現有 SHA 釘版掃描已覆蓋，不採用額外 workflow／無關檔案。 |
+| [#2912](https://github.com/microsoft/markitdown/pull/2912) OPEN | `25b3f8e541f2e0dc1f76e894aea5c5bd7e9221ca` | +106/-0；3 | 延後 | markdownify 預設 table_infer_header=True，影響 HTML 與 DOCX，附 opt-out 測試；一般輸出預設變更。觸發：上游合併。 |
+| [#2913](https://github.com/microsoft/markitdown/pull/2913) OPEN | `38c557bc5b3553e23cb757db6380b683aca116f2` | +72/-1；2 | 延後 | CLI --extract-images 寫 base64 圖到輸出旁並改連結，新增落地副作用與檔名政策；非 Windows／CJK 小修。觸發：上游合併且本 fork 有明確需求。 |
+| [#2914](https://github.com/microsoft/markitdown/pull/2914) OPEN | `de049e2f5ee97846ad59a95f9c7343d89f68fc7d` | +51/-3；3 | 延後 | 保留被 fragment 連結引用的空 anchor，影響 HTML／DOCX 書籤，附跳脫測試；一般結構修正。觸發：上游合併。 |
+| [#2915](https://github.com/microsoft/markitdown/pull/2915) OPEN | `eb0703b6f9e3434ce3c31b69c86850ed0f636047` | +8/-0；1 | 延後 | README 補 stdin --extension／--charset 使用方式；不是碼頁修正。觸發：上游合併後按雙語入口流程同步。 |
+| [#2916](https://github.com/microsoft/markitdown/pull/2916) OPEN | `0e06a5cac0e7c8156c2af16c0011a4575e1aa9dc` | +357/-10；2 | 延後 | PPTX 改逐 run 超連結、段落清單與表格 cell／notes 格式（+357 行），牽動共用 converter 輸出；與 #2843 同題，非小修例外。觸發：上游擇一合併。 |
+
+### Issue 軸（17 筆）
+
+| Issue | 決定 | 理由與觸發條件 |
+| --- | --- | --- |
+| [#2853](https://github.com/microsoft/markitdown/issues/2853) CLOSED | 拒絕 | 本文為空，沒有缺陷描述。不下載附件；若後續補可重現缺陷與可公開最小輸入，再重評。 |
+| [#2856](https://github.com/microsoft/markitdown/issues/2856) CLOSED | 拒絕 | 只有文件上傳失敗註記，沒有缺陷描述。不下載附件；若後續補可重現缺陷與可公開最小輸入，再重評。 |
+| [#2860](https://github.com/microsoft/markitdown/issues/2860) CLOSED | 拒絕 | 本文為空，沒有缺陷描述。不下載附件；若後續補可重現缺陷與可公開最小輸入，再重評。 |
+| [#2862](https://github.com/microsoft/markitdown/issues/2862) OPEN | 延後 | 上游 clone URL 使用 SSH 的文件問題，對應 #2863／#2880；繁中入口已用 HTTPS。觸發：上游合併後同步英文鏡像與套件 README。 |
+| [#2864](https://github.com/microsoft/markitdown/issues/2864) CLOSED | 拒絕 | 要求把簡報轉 Markdown，未提供錯誤或重現步驟。不下載附件；若後續補可重現缺陷與可公開最小輸入，再重評。 |
+| [#2872](https://github.com/microsoft/markitdown/issues/2872) CLOSED | 拒絕 | 本文為空，沒有缺陷描述。不下載附件；若後續補可重現缺陷與可公開最小輸入，再重評。 |
+| [#2873](https://github.com/microsoft/markitdown/issues/2873) CLOSED | 拒絕 | 本文為空，沒有缺陷描述。不下載附件；若後續補可重現缺陷與可公開最小輸入，再重評。 |
+| [#2877](https://github.com/microsoft/markitdown/issues/2877) CLOSED | 拒絕 | 只有 PDF 附件，沒有缺陷描述。不下載附件；若後續補可重現缺陷與可公開最小輸入，再重評。 |
+| [#2893](https://github.com/microsoft/markitdown/issues/2893) OPEN | 拒絕 | 只有 PDF 附件，沒有缺陷描述。不下載附件；若後續補可重現缺陷與可公開最小輸入，再重評。 |
+| [#2896](https://github.com/microsoft/markitdown/issues/2896) OPEN | 拒絕 | 要求把簡報轉成可供 AI 使用的 Markdown，沒有產品錯誤。不下載附件；若後續補可重現缺陷與可公開最小輸入，再重評。 |
+| [#2897](https://github.com/microsoft/markitdown/issues/2897) OPEN | 拒絕 | 與 #2896 相同轉檔請求與附件，沒有產品錯誤。不下載附件；若後續補可重現缺陷與可公開最小輸入，再重評。 |
+| [#2902](https://github.com/microsoft/markitdown/issues/2902) OPEN | 拒絕 | 只有 PDF 附件，沒有缺陷描述。不下載附件；若後續補可重現缺陷與可公開最小輸入，再重評。 |
+| [#2903](https://github.com/microsoft/markitdown/issues/2903) OPEN | 拒絕 | 本文為空，沒有缺陷描述。不下載附件；若後續補可重現缺陷與可公開最小輸入，再重評。 |
+| [#2904](https://github.com/microsoft/markitdown/issues/2904) OPEN | 拒絕 | 只有 PDF 附件，沒有缺陷描述。不下載附件；若後續補可重現缺陷與可公開最小輸入，再重評。 |
+| [#2906](https://github.com/microsoft/markitdown/issues/2906) OPEN | 拒絕 | 本文只有 Google，沒有缺陷描述。不下載附件；若後續補可重現缺陷與可公開最小輸入，再重評。 |
+| [#2909](https://github.com/microsoft/markitdown/issues/2909) OPEN | 拒絕 | 詢問如何把 PDF 轉成較省 AI 額度的檔案，沒有可重現缺陷。不下載附件；若後續補可重現缺陷與可公開最小輸入，再重評。 |
+| [#2917](https://github.com/microsoft/markitdown/issues/2917) OPEN | 拒絕 | 只有招標文件附件清單，沒有缺陷描述。不下載附件；若後續補可重現缺陷與可公開最小輸入，再重評。 |
+
+**水位決定**：驗證完成後，PR `#2852` → `#2916`、Issue `#2850` → `#2917`；commit 水位維持 `ed178952a6672abdfd35b5f9e76a80b6cefc086e`，`reviewed_date` 更新為 2026-11-24。本輪列舉到的增量無未審項；舊水位以下的 OPEN PR 與非 main 分支不重做全面盤點，仍依既有合併／輸入觸發條件追蹤。
+
+**路線圖**：刪除「無近期工作」的過時佔位，保留既有觸發條件並加入本輪 EPUB／MCP／URI 裁決；補回 REVIEW 已記錄的 Windows 全套產品驗收與 PowerShell 5.1 未驗證事項。11-21 修復、自有產品 CI 與 11-22 MCP 文件已完成，不再列為待做。本輪未查遠端安全 alerts、CI 或 PyPI，未沿用舊狀態宣稱它們已通過。
+
+**驗證**：`pwsh -NoProfile -File tools/dev_check.ps1` exit 0（43 passed，Ruff 與文件連結檢查通過），完成後才推進 PR／Issue 水位。產品程式未變，未執行 `tools/test_product.ps1 -AllPackages`，不宣稱本輪補齊歷史產品驗收。
